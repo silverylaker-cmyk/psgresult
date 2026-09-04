@@ -1,72 +1,60 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import type { PsgValues } from '../../psg/types';
-import { AnimatedNumber, Card, Icon, Rise, SceneFrame, T } from '../ui';
+import { AnimatedNumber, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
 const ITEMS = [
-  { icon: 'breath', label: '숨', desc: '숨이 멈추거나\n얕아진 횟수' },
-  { icon: 'oxygen', label: '산소', desc: '피 속 산소가\n떨어진 정도' },
-  { icon: 'position', label: '자세', desc: '바로 누울 때와\n옆으로 잘 때' },
-  { icon: 'sleep', label: '잠의 질', desc: '깊게 잔 시간과\n중간에 깬 정도' },
-] as const;
+  { label: '숨', desc: '멈추거나 얕아진 횟수', needle: '횟수' },
+  { label: '산소', desc: '피 속 산소가 떨어진 정도', needle: '횟수' },
+  { label: '자세', desc: '바로 누울 때와 옆으로 잘 때', needle: '횟수' },
+  { label: '잠의 질', desc: '깊게 잔 시간과 깬 정도', needle: '횟수' },
+];
 
-export const OverviewScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, total, title, narration, values }) => {
+export const OverviewScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, total, narration, values }) => {
   const { durationInFrames, fps } = useVideoConfig();
-  const listAt = sentenceStartFrame(narration, '횟수', durationInFrames, fps) ?? 20;
+  const listAt = sentenceStartFrame(narration, '횟수', durationInFrames, fps) ?? 30;
+  const noteAt = sentenceStartFrame(narration, '코골이 소리만', durationInFrames, fps) ?? listAt + 80;
   const sumAt = sentenceStartFrame(narration, '주무신 시간', durationInFrames, fps);
-  const hasSummary = values.tst != null || values.eff != null;
+  const hasSummary = values.tst != null;
 
   return (
-    <SceneFrame title={title} subtitle="코골이 소리만 듣는 검사가 아닙니다" index={index} total={total}>
-      <div style={{ display: 'flex', gap: 28 }}>
-        {ITEMS.map((it, i) => (
-          <Rise key={it.label} at={listAt + i * 12} style={{ flex: 1 }}>
-            <Card style={{ height: 330, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <div
-                style={{
-                  width: 120,
-                  height: 120,
-                  borderRadius: '50%',
-                  background: '#e6f1f3',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Icon name={it.icon} size={68} />
-              </div>
-              <div style={{ marginTop: 22, fontSize: 40, fontWeight: 900, color: T.navy }}>{it.label}</div>
-              <div style={{ marginTop: 10, fontSize: 26, lineHeight: 1.45, color: T.gray, whiteSpace: 'pre-line' }}>{it.desc}</div>
-            </Card>
-          </Rise>
-        ))}
-      </div>
-
-      {hasSummary && (
-        <Rise at={sumAt ?? listAt + 70}>
-          <div style={{ display: 'flex', gap: 24, marginTop: 34 }}>
-            {values.tst != null && (
-              <Summary label="실제로 주무신 시간">
-                <AnimatedNumber value={values.tst / 60} at={(sumAt ?? 90) + 5} decimals={1} /> 시간
-              </Summary>
-            )}
-            {values.eff != null && (
-              <Summary label="수면 효율 (누워 있던 시간 중 잠든 비율)">
-                <AnimatedNumber value={values.eff} at={(sumAt ?? 90) + 5} decimals={0} /> %
-              </Summary>
-            )}
-          </div>
+    <SceneFrame index={index} total={total}>
+      <div style={{ position: 'absolute', top: 150, left: 0, right: 0 }}>
+        <Rise at={0}>
+          <Eyebrow>오늘 밤</Eyebrow>
+          <Headline style={{ marginTop: 16 }}>네 가지를 봤습니다.</Headline>
         </Rise>
-      )}
+
+        <div style={{ display: 'flex', gap: 40, marginTop: 90 }}>
+          {ITEMS.map((it, i) => (
+            <Rise key={it.label} at={listAt + i * 14} style={{ flex: 1 }}>
+              <div style={{ borderTop: `3px solid ${T.ink}`, paddingTop: 22 }}>
+                <div style={{ fontSize: 64, fontWeight: 900, letterSpacing: -2, color: T.ink }}>{it.label}</div>
+                <div style={{ marginTop: 10, fontSize: 26, color: T.ink2, fontWeight: 500 }}>{it.desc}</div>
+              </div>
+            </Rise>
+          ))}
+        </div>
+
+        <Rise at={noteAt}>
+          <div style={{ marginTop: 80, fontSize: 34, fontWeight: 500, color: T.ink2 }}>코골이 소리만 듣는 검사가 아닙니다.</div>
+        </Rise>
+
+        {hasSummary && (
+          <Rise at={sumAt ?? noteAt + 60}>
+            <div style={{ marginTop: 24, fontSize: 34, fontWeight: 700, color: T.ink, lineHeight: 1.6 }}>
+              실제로 <AnimatedNumber value={values.tst! / 60} at={(sumAt ?? noteAt + 60) + 5} decimals={1} style={{ fontSize: 48, fontWeight: 900 }} />시간 주무셨고,
+              {values.eff != null && (
+                <>
+                  {' '}수면 효율은 <AnimatedNumber value={values.eff} at={(sumAt ?? noteAt + 60) + 5} decimals={0} style={{ fontSize: 48, fontWeight: 900 }} />%였습니다.
+                </>
+              )}
+            </div>
+          </Rise>
+        )}
+      </div>
     </SceneFrame>
   );
 };
-
-const Summary: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <div style={{ flex: 1, background: '#e6f1f3', borderRadius: 22, padding: '22px 34px', display: 'flex', alignItems: 'baseline', gap: 24 }}>
-    <div style={{ fontSize: 26, color: T.gray, fontWeight: 500 }}>{label}</div>
-    <div style={{ fontSize: 48, fontWeight: 900, color: T.navy, marginLeft: 'auto' }}>{children}</div>
-  </div>
-);
