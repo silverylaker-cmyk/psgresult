@@ -12,7 +12,7 @@ import { DaytimeScene, OptionsScene } from './scenes/DaytimeOptions';
 
 export const VIDEO = { width: 1920, height: 1080, fps: 30 } as const;
 
-const DARK: ReadonlySet<SceneSpec['id']> = new Set(['intro', 'outro']);
+const DARK: ReadonlySet<SceneSpec['id']> = new Set();
 
 export const PsgExplainer: React.FC<ExplainerProps> = ({ values, scenes, showCaptions }) => {
   let from = 0;

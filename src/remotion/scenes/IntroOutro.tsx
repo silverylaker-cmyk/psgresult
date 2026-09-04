@@ -17,29 +17,29 @@ export const IntroScene: React.FC<SceneProps> = ({ index, total, narration }) =>
   const l3 = sentenceStartFrame(narration, '정도 걸립니다', durationInFrames, fps) ?? 120;
 
   return (
-    <SceneFrame index={index} total={total} dark>
+    <SceneFrame index={index} total={total}>
       <div style={{ position: 'absolute', top: 260, left: 0, right: 0 }}>
         <Rise at={0}>
-          <Eyebrow dark>진료 전에 먼저 보세요.</Eyebrow>
+          <Eyebrow>진료 전에 먼저 보세요.</Eyebrow>
         </Rise>
         <Rise at={10}>
-          <Headline size={136} dark style={{ marginTop: 24 }}>
+          <Headline size={136} style={{ marginTop: 24 }}>
             수면다원검사
             <br />
             결과 안내
           </Headline>
         </Rise>
         <Rise at={l2}>
-          <div style={{ marginTop: 44, fontSize: 36, fontWeight: 500, lineHeight: 1.5, color: 'rgba(255,255,255,0.6)', maxWidth: 1100 }}>
+          <div style={{ marginTop: 44, fontSize: 36, fontWeight: 500, lineHeight: 1.5, color: T.ink2, maxWidth: 1100 }}>
             의사가 숫자 하나하나를 읽기 전에,
             <br />
             오늘 검사가 의미하는 것만 먼저 정리했습니다.
           </div>
         </Rise>
         <Rise at={l3}>
-          <div style={{ marginTop: 40, fontSize: 30, fontWeight: 700, color: '#fff' }}>
-            약 {minutes}분 <span style={{ color: 'rgba(255,255,255,0.35)', fontWeight: 500, margin: '0 16px' }}>·</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontWeight: 500 }}>치료 선택은 진료실에서 의사와 함께</span>
+          <div style={{ marginTop: 40, fontSize: 30, fontWeight: 700, color: T.ink }}>
+            약 {minutes}분 <span style={{ color: T.ink3, fontWeight: 500, margin: '0 16px' }}>·</span>
+            <span style={{ color: T.ink2, fontWeight: 500 }}>치료 선택은 진료실에서 의사와 함께</span>
           </div>
         </Rise>
       </div>
@@ -57,11 +57,11 @@ export const OutroScene: React.FC<SceneProps> = ({ index, total, narration }) =>
   const discAt = sentenceStartFrame(narration, '결과 안내', durationInFrames, fps) ?? 150;
 
   return (
-    <SceneFrame index={index} total={total} dark>
+    <SceneFrame index={index} total={total}>
       <div style={{ position: 'absolute', top: 150, left: 0, right: 0 }}>
         <Rise at={0}>
-          <Eyebrow dark>이제 진료실에서</Eyebrow>
-          <Headline size={92} dark style={{ marginTop: 16 }}>
+          <Eyebrow>이제 진료실에서</Eyebrow>
+          <Headline size={92} style={{ marginTop: 16 }}>
             이 세 가지만 확인하면 됩니다.
           </Headline>
         </Rise>
@@ -69,14 +69,14 @@ export const OutroScene: React.FC<SceneProps> = ({ index, total, narration }) =>
           {items.map((it) => (
             <Rise key={it.n} at={it.at}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 36 }}>
-                <div style={{ fontSize: 30, fontWeight: 700, color: 'rgba(255,255,255,0.35)', fontVariantNumeric: 'tabular-nums' }}>{it.n}</div>
-                <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, color: '#fff' }}>{it.text}</div>
+                <div style={{ fontSize: 30, fontWeight: 700, color: T.ink3, fontVariantNumeric: 'tabular-nums' }}>{it.n}</div>
+                <div style={{ fontSize: 52, fontWeight: 700, letterSpacing: -1, color: T.ink }}>{it.text}</div>
               </div>
             </Rise>
           ))}
         </div>
         <Rise at={discAt}>
-          <div style={{ marginTop: 70, fontSize: 28, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+          <div style={{ marginTop: 70, fontSize: 28, color: T.ink2, fontWeight: 500 }}>
             이 영상은 결과 안내입니다. 진단과 치료는 담당 의사가 결정합니다.
           </div>
         </Rise>
