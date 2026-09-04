@@ -1,71 +1,78 @@
 import React from 'react';
-import { useVideoConfig } from 'remotion';
+import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C } from '../../psg/metrics';
-import { ahiSeverity } from '../../psg/script';
+import { SEV_WORD, ahiSeverity, hoursText, nightlyEvents } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
-import { BigNumber, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, SegmentScale, T, sev } from '../ui';
+import { BigNumber, Body, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, SegmentScale, T, clamp, sev } from '../ui';
+import { BreathArt } from '../illustrations';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
 /** 환자용 영상은 표준 기준(5 / 15 / 30)을 쓴다. 표시 상한 40. */
 export const AHI_SEGMENTS = [
   { from: 0, to: 5, color: sev(C.good), label: '정상' },
-  { from: 5, to: 15, color: sev(C.mild), label: '경증' },
-  { from: 15, to: 30, color: sev(C.moderate), label: '중등도' },
-  { from: 30, to: 40, color: sev(C.severe), label: '중증' },
+  { from: 5, to: 15, color: sev(C.mild), label: '가벼움' },
+  { from: 15, to: 30, color: sev(C.moderate), label: '중간' },
+  { from: 30, to: 40, color: sev(C.severe), label: '심함' },
 ];
-const LABEL = { normal: '정상', mild: '경증', moderate: '중등도', severe: '중증', unknown: '' } as const;
+const SEG_LABEL = { normal: '정상', mild: '가벼움', moderate: '중간', severe: '심함', unknown: '' } as const;
+const GAPS = { normal: 0, mild: 1, moderate: 2, severe: 4, unknown: 0 } as const;
 
 export const AhiScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, total, narration, values }) => {
+  const frame = useCurrentFrame();
   const { durationInFrames, fps } = useVideoConfig();
   const ahi = values.ahi;
-  const label = LABEL[ahiSeverity(ahi)];
-  const seg = AHI_SEGMENTS.find((s) => s.label === label);
+  const s = ahiSeverity(ahi);
+  const seg = AHI_SEGMENTS.find((x) => x.label === SEG_LABEL[s]);
+  const color = seg?.color ?? T.ink;
 
-  const zonesAt = sentenceStartFrame(narration, '5회 미만', durationInFrames, fps) ?? 50;
-  const valueAt = sentenceStartFrame(narration, '환자분의', durationInFrames, fps) ?? sentenceStartFrame(narration, '읽지 못했', durationInFrames, fps) ?? 130;
-  const noteAt = sentenceStartFrame(narration, /한 시간에 약|진료실에서 직접/, durationInFrames, fps) ?? valueAt + 60;
+  const zonesAt = sentenceStartFrame(narration, '5번 미만', durationInFrames, fps) ?? 50;
+  const valueAt = sentenceStartFrame(narration, '환자분은', durationInFrames, fps) ?? sentenceStartFrame(narration, '읽지 못했', durationInFrames, fps) ?? 130;
+  const noteAt = sentenceStartFrame(narration, /반복했다는|진료실에서 직접/, durationInFrames, fps) ?? valueAt + 60;
+  const waveP = interpolate(frame, [10, 90], [0, 1], clamp);
+  const nightly = nightlyEvents(ahi, values.tst);
 
   return (
-    <SceneFrame index={index} total={total}>
-      <div style={{ position: 'absolute', top: 120, left: 0, right: 0 }}>
-        <Rise at={0}>
-          <Eyebrow>기억할 숫자는 하나</Eyebrow>
-          <Headline style={{ marginTop: 12 }}>AHI</Headline>
-          <div style={{ marginTop: 10, fontSize: 30, color: T.ink2, fontWeight: 500 }}>잠든 한 시간 동안 숨이 멈추거나 매우 얕아진 평균 횟수</div>
-        </Rise>
+    <SceneFrame index={index} total={total} art={<BreathArt gaps={GAPS[s]} color={color} progress={waveP} />} split={0.58}>
+      <Rise at={0}>
+        <Eyebrow>가장 중요한 숫자</Eyebrow>
+        <Headline style={{ marginTop: 14 }}>한 시간에 숨이<br />몇 번 멈췄나.</Headline>
+      </Rise>
 
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 60, marginTop: 50 }}>
-          <Rise at={valueAt - 6}>
-            {ahi == null ? (
-              <div style={{ height: 240, display: 'flex', alignItems: 'flex-end' }}>
-                <NA />
-              </div>
-            ) : (
-              <BigNumber value={ahi} at={valueAt} decimals={1} unit="회 / 시간" size={260} color={seg?.color ?? T.ink} />
-            )}
-          </Rise>
-          {seg && (
-            <div style={{ paddingBottom: 18 }}>
-              <Pill color={seg.color} size={34} at={valueAt + 30}>
-                {seg.label}
-              </Pill>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 40, marginTop: 40 }}>
+        <Rise at={valueAt - 6}>
+          {ahi == null ? (
+            <div style={{ height: 180, display: 'flex', alignItems: 'flex-end' }}>
+              <NA />
             </div>
+          ) : (
+            <BigNumber value={ahi} at={valueAt} decimals={1} unit="번 / 시간" size={200} color={color} />
           )}
-        </div>
-
-        <Rise at={zonesAt}>
-          <div style={{ marginTop: 60 }}>
-            <SegmentScale segments={AHI_SEGMENTS} max={40} value={ahi} activeLabel={label} at={valueAt} ticks={[{ v: 0 }, { v: 5 }, { v: 15 }, { v: 30 }, { v: 40, text: '40+' }]} />
-          </div>
         </Rise>
-
-        <Rise at={noteAt}>
-          <div style={{ marginTop: 40, fontSize: 34, fontWeight: 700, color: T.ink }}>
-            {ahi == null ? 'AHI는 진료실에서 직접 확인해 드립니다.' : `한 시간에 약 ${Math.round(ahi)}번, 숨이 얕아지거나 멈췄다는 뜻입니다.`}
+        {seg && (
+          <div style={{ paddingBottom: 14 }}>
+            <Pill color={color} size={30} at={valueAt + 30}>
+              {SEV_WORD[s]}
+            </Pill>
           </div>
-        </Rise>
+        )}
       </div>
+
+      <Rise at={zonesAt}>
+        <div style={{ marginTop: 44, maxWidth: 900 }}>
+          <SegmentScale segments={AHI_SEGMENTS} max={40} value={ahi} activeLabel={SEG_LABEL[s]} at={valueAt} ticks={[{ v: 0 }, { v: 5 }, { v: 15 }, { v: 30 }, { v: 40, text: '40+' }]} />
+        </div>
+      </Rise>
+
+      <Rise at={noteAt}>
+        <Body size={30} strong style={{ marginTop: 34 }}>
+          {ahi == null
+            ? 'AHI는 진료실에서 직접 확인해 드립니다.'
+            : nightly != null && nightly > 0
+              ? `어젯밤 ${hoursText(values.tst!)} 동안 약 ${nightly}번, 숨이 막혔다 풀리기를 반복했습니다.`
+              : `한 시간에 약 ${Math.round(ahi)}번, 숨이 막혔다 풀리기를 반복했습니다.`}
+        </Body>
+      </Rise>
     </SceneFrame>
   );
 };

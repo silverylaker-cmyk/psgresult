@@ -1,30 +1,102 @@
 import React from 'react';
-import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, continueRender, delayRender, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C, type FaceExpr } from '../psg/metrics';
 import { SCENE_TAIL_SEC, splitSentences } from '../psg/script';
 
-/* ───────── 테마: 키노트 스타일 (큰 글자, 여백, 화면당 메시지 하나) ───────── */
-export const T = {
-  bg: '#fbfbfa',
-  dark: '#0b0c0e',
-  ink: '#111214',
-  ink2: '#6e7074',
-  ink3: '#a5a7ab',
-  line: '#e6e6e4',
-  accent: C.teal,
-  font: "'Noto Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif",
-  /** 본문 좌우 여백 */
-  margin: 160,
+/* ───────── 폰트: Google Fonts 를 최선 노력으로 불러온다 (실패해도 시스템 폰트로 계속) ───────── */
+const FONT_CSS =
+  'https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Noto+Serif+KR:wght@500;700;900&display=swap';
+const SERIF_FAMILY = 'Noto Serif KR';
+const SANS_FAMILY = 'Noto Sans KR';
+
+let fontsPromise: Promise<void> | null = null;
+function loadFonts(): Promise<void> {
+  if (fontsPromise) return fontsPromise;
+  fontsPromise = new Promise<void>((resolve) => {
+    if (typeof document === 'undefined') return resolve();
+    const finish = () => resolve();
+    const timeout = setTimeout(finish, 25000);
+    let link = document.querySelector<HTMLLinkElement>('link[data-psg-fonts]');
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = FONT_CSS;
+      link.dataset.psgFonts = '1';
+      document.head.appendChild(link);
+    }
+    const requestAll = () => {
+      // 한글 전체 음절 + 숫자·문장부호를 한 번에 요청해, 렌더 중 글꼴이 바뀌지 않게 한다
+      let hangul = '';
+      for (let c = 0xac00; c <= 0xd7a3; c += 1) hangul += String.fromCharCode(c);
+      const sample = hangul + '0123456789%.,·—:()/ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+      const faces = [
+        ...['500', '700', '900'].map((w) => `${w} 20px '${SERIF_FAMILY}'`),
+        ...['400', '500', '700', '900'].map((w) => `${w} 20px '${SANS_FAMILY}'`),
+      ];
+      Promise.allSettled(faces.map((f) => document.fonts.load(f, sample))).then(() => {
+        clearTimeout(timeout);
+        finish();
+      });
+    };
+    if (link.sheet) requestAll();
+    else {
+      link.addEventListener('load', requestAll, { once: true });
+      link.addEventListener('error', () => {
+        clearTimeout(timeout);
+        finish();
+      }, { once: true });
+    }
+  });
+  return fontsPromise;
+}
+
+/** 컴포지션 안에서 한 번 렌더하면 폰트가 준비될 때까지 렌더를 잠시 미룬다 */
+export const FontLoader: React.FC = () => {
+  const [handle] = React.useState(() => delayRender('Loading fonts', { timeoutInMilliseconds: 30000 }));
+  React.useEffect(() => {
+    loadFonts().then(() => continueRender(handle));
+  }, [handle]);
+  return null;
 };
 
-/** 중증도 색상을 키노트 톤에 맞게 살짝 낮춘 값 */
+/* ───────── 테마: 따뜻한 크림 + 테라코타, 세리프 헤드라인, 손그림 일러스트 ───────── */
+export const T = {
+  bg: '#F3EFE7',
+  paper: '#FBF9F4',
+  ink: '#1F1D1A',
+  ink2: '#6B665E',
+  ink3: '#A8A299',
+  line: '#E3DDD1',
+  accent: '#D4784F',
+  accentSoft: '#F2DCCD',
+  clay: '#C45C3E',
+  sage: '#8FA98F',
+  sageSoft: '#DDE6D8',
+  sky: '#7E9BB5',
+  skySoft: '#DAE4EC',
+  sand: '#D8B15A',
+  sandSoft: '#F1E6C6',
+  serif: `'${SERIF_FAMILY}', 'Nanum Myeongjo', 'Apple SD Gothic Neo', serif`,
+  sans: `'${SANS_FAMILY}', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif`,
+  margin: 140,
+};
+
+/** 중증도 색상 (따뜻한 톤으로 조정) */
 export const SEV = {
-  [C.good]: '#2e9e5b',
-  [C.mild]: '#d99a00',
-  [C.moderate]: '#e2622b',
-  [C.severe]: '#d3302f',
+  [C.good]: '#5F9A6B',
+  [C.mild]: '#D6A03C',
+  [C.moderate]: '#D4784F',
+  [C.severe]: '#C45C3E',
 } as Record<string, string>;
 export const sev = (c?: string | null) => (c && SEV[c]) || T.ink;
+/** 중증도 색상의 연한 배경 */
+export const SEV_SOFT: Record<string, string> = {
+  '#5F9A6B': '#DCE8DA',
+  '#D6A03C': '#F3E6C4',
+  '#D4784F': '#F2DCCD',
+  '#C45C3E': '#F0D3C8',
+};
+export const soft = (c: string) => SEV_SOFT[c] ?? T.sandSoft;
 
 /* ───────── 애니메이션 헬퍼 ───────── */
 export const clamp = { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' } as const;
@@ -39,42 +111,35 @@ export function useEnter(startFrame: number, opts?: { damping?: number; stiffnes
   });
 }
 
-/** 블러가 걷히며 아래에서 떠오르는 등장 (키노트 스타일) */
-export const Rise: React.FC<{
-  at: number;
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-  distance?: number;
-}> = ({ at, children, style, distance = 36 }) => {
+/** 아래에서 부드럽게 떠오르는 등장 */
+export const Rise: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties; distance?: number }> = ({
+  at,
+  children,
+  style,
+  distance = 30,
+}) => {
   const p = useEnter(at);
   return (
-    <div
-      style={{
-        opacity: p,
-        transform: `translateY(${(1 - p) * distance}px)`,
-        filter: `blur(${(1 - p) * 12}px)`,
-        ...style,
-      }}
-    >
+    <div style={{ opacity: p, transform: `translateY(${(1 - p) * distance}px)`, ...style }}>
       {children}
     </div>
   );
 };
 
-/** 살짝 커지며 등장 */
-export const Pop: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ at, children, style }) => {
-  const p = useEnter(at, { damping: 16, stiffness: 140 });
-  return <div style={{ opacity: Math.min(1, p * 1.5), transform: `scale(${0.85 + 0.15 * p})`, ...style }}>{children}</div>;
+/** 일러스트 등장: 살짝 커지며 페이드 */
+export const Grow: React.FC<{ at: number; children: React.ReactNode; style?: React.CSSProperties }> = ({ at, children, style }) => {
+  const p = useEnter(at, { damping: 18, stiffness: 70 });
+  return <div style={{ opacity: p, transform: `scale(${0.92 + 0.08 * p})`, transformOrigin: 'center', ...style }}>{children}</div>;
 };
 
 /** 숫자 카운트업 */
-export const AnimatedNumber: React.FC<{
-  value: number;
-  at: number;
-  duration?: number;
-  decimals?: number;
-  style?: React.CSSProperties;
-}> = ({ value, at, duration = 45, decimals = 1, style }) => {
+export const AnimatedNumber: React.FC<{ value: number; at: number; duration?: number; decimals?: number; style?: React.CSSProperties }> = ({
+  value,
+  at,
+  duration = 45,
+  decimals = 1,
+  style,
+}) => {
   const frame = useCurrentFrame();
   const p = interpolate(frame, [at, at + duration], [0, 1], clamp);
   const eased = 1 - Math.pow(1 - p, 4);
@@ -82,43 +147,43 @@ export const AnimatedNumber: React.FC<{
 };
 
 /* ───────── 타이포 ───────── */
-/** 화면 상단의 작은 회색 라벨 */
-export const Eyebrow: React.FC<{ children: React.ReactNode; dark?: boolean }> = ({ children, dark }) => (
-  <div style={{ fontSize: 30, fontWeight: 500, color: dark ? 'rgba(255,255,255,0.55)' : T.ink2, letterSpacing: 0.2 }}>{children}</div>
+export const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div style={{ fontFamily: T.sans, fontSize: 26, fontWeight: 700, color: T.accent, letterSpacing: 0.5 }}>{children}</div>
 );
 
-/** 큰 헤드라인 */
-export const Headline: React.FC<{ children: React.ReactNode; size?: number; dark?: boolean; style?: React.CSSProperties }> = ({
+export const Headline: React.FC<{ children: React.ReactNode; size?: number; style?: React.CSSProperties }> = ({ children, size = 84, style }) => (
+  <div style={{ fontFamily: T.serif, fontSize: size, fontWeight: 700, letterSpacing: -size * 0.02, lineHeight: 1.22, color: T.ink, ...style }}>{children}</div>
+);
+
+export const Body: React.FC<{ children: React.ReactNode; size?: number; style?: React.CSSProperties; strong?: boolean }> = ({
   children,
-  size = 84,
-  dark,
+  size = 30,
   style,
+  strong,
 }) => (
-  <div style={{ fontSize: size, fontWeight: 900, letterSpacing: -size * 0.03, lineHeight: 1.15, color: dark ? '#fff' : T.ink, ...style }}>
-    {children}
-  </div>
+  <div style={{ fontFamily: T.sans, fontSize: size, fontWeight: strong ? 700 : 400, lineHeight: 1.55, color: strong ? T.ink : T.ink2, ...style }}>{children}</div>
 );
 
 /** 큰 숫자 + 단위 */
-export const BigNumber: React.FC<{
-  value: number;
-  at: number;
-  unit?: string;
-  decimals?: number;
-  size?: number;
-  color?: string;
-  duration?: number;
-}> = ({ value, at, unit, decimals = 0, size = 300, color = T.ink, duration = 50 }) => (
-  <div style={{ display: 'flex', alignItems: 'baseline', gap: size * 0.06 }}>
-    <div style={{ fontSize: size, fontWeight: 900, lineHeight: 0.9, letterSpacing: -size * 0.05, color }}>
+export const BigNumber: React.FC<{ value: number; at: number; unit?: string; decimals?: number; size?: number; color?: string; duration?: number }> = ({
+  value,
+  at,
+  unit,
+  decimals = 0,
+  size = 220,
+  color = T.ink,
+  duration = 50,
+}) => (
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: size * 0.06, fontFamily: T.sans }}>
+    <div style={{ fontSize: size, fontWeight: 900, lineHeight: 0.95, letterSpacing: -size * 0.05, color }}>
       <AnimatedNumber value={value} at={at} decimals={decimals} duration={duration} />
     </div>
-    {unit && <div style={{ fontSize: size * 0.2, fontWeight: 700, color: T.ink2 }}>{unit}</div>}
+    {unit && <div style={{ fontSize: size * 0.18, fontWeight: 700, color: T.ink2 }}>{unit}</div>}
   </div>
 );
 
 /** 중증도 알약 */
-export const Pill: React.FC<{ color: string; children: React.ReactNode; size?: number; at?: number }> = ({ color, children, size = 30, at = 0 }) => {
+export const Pill: React.FC<{ color: string; children: React.ReactNode; size?: number; at?: number }> = ({ color, children, size = 28, at = 0 }) => {
   const p = useEnter(at, { damping: 14, stiffness: 160 });
   return (
     <span
@@ -126,10 +191,11 @@ export const Pill: React.FC<{ color: string; children: React.ReactNode; size?: n
         display: 'inline-flex',
         alignItems: 'center',
         gap: size * 0.4,
-        background: color,
-        color: '#fff',
+        background: soft(color),
+        color,
         borderRadius: 999,
-        padding: `${size * 0.35}px ${size * 0.9}px`,
+        padding: `${size * 0.35}px ${size * 0.85}px`,
+        fontFamily: T.sans,
         fontSize: size,
         fontWeight: 900,
         opacity: p,
@@ -138,20 +204,17 @@ export const Pill: React.FC<{ color: string; children: React.ReactNode; size?: n
         whiteSpace: 'nowrap',
       }}
     >
-      <span style={{ width: size * 0.45, height: size * 0.45, borderRadius: '50%', background: '#fff' }} />
+      <span style={{ width: size * 0.45, height: size * 0.45, borderRadius: '50%', background: color }} />
       {children}
     </span>
   );
 };
 
-export const NA: React.FC<{ size?: number }> = ({ size = 48 }) => (
-  <span style={{ color: T.ink3, fontWeight: 500, fontSize: size }}>결과지에서 읽지 못함</span>
+export const NA: React.FC<{ size?: number }> = ({ size = 40 }) => (
+  <span style={{ fontFamily: T.sans, color: T.ink3, fontWeight: 500, fontSize: size }}>결과지에서 읽지 못함</span>
 );
 
-/**
- * 구간 스케일 — 얇은 막대와 세로 마커. 활성 구간만 색이 있고 나머지는 회색.
- * segments: 낮은값→높은값 순, 폭은 (to-from)/max
- */
+/** 구간 스케일 — 얇은 막대와 마커. 활성 구간만 색이 있고 나머지는 연한 회색. */
 export const SegmentScale: React.FC<{
   segments: Array<{ from: number; to: number; color: string; label: string }>;
   max: number;
@@ -161,46 +224,34 @@ export const SegmentScale: React.FC<{
   at: number;
   ticks?: Array<{ v: number; text?: string }>;
   height?: number;
-  dark?: boolean;
-}> = ({ segments, max, min = 0, value, activeLabel, at, ticks, height = 44, dark }) => {
+}> = ({ segments, max, min = 0, value, activeLabel, at, ticks, height = 26 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const p = spring({ frame: frame - at, fps, config: { damping: 20, stiffness: 60, mass: 1.1 } });
   const range = max - min;
   const pct = value == null ? 0 : ((Math.min(max, Math.max(min, value)) - min) / range) * 100 * p;
-  const inactive = dark ? 'rgba(255,255,255,0.14)' : '#e6e6e4';
+  const on = frame >= at + 20;
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', height, borderRadius: 6, overflow: 'hidden', gap: 3 }}>
+    <div style={{ position: 'relative', fontFamily: T.sans }}>
+      <div style={{ display: 'flex', height, borderRadius: height / 2, overflow: 'hidden', gap: 4 }}>
         {segments.map((s) => (
-          <div key={s.label} style={{ width: `${((s.to - s.from) / range) * 100}%`, background: s.label === activeLabel && frame >= at + 20 ? s.color : inactive }} />
+          <div key={s.label} style={{ width: `${((s.to - s.from) / range) * 100}%`, background: s.label === activeLabel && on ? s.color : T.line, borderRadius: height / 2 }} />
         ))}
       </div>
       {value != null && (
-        <div
-          style={{
-            position: 'absolute',
-            top: -16,
-            left: `${pct}%`,
-            transform: 'translateX(-50%)',
-            width: 5,
-            height: height + 32,
-            borderRadius: 3,
-            background: dark ? '#fff' : T.ink,
-          }}
-        />
+        <div style={{ position: 'absolute', top: -14, left: `${pct}%`, transform: 'translateX(-50%)', width: height + 28, height: height + 28, borderRadius: '50%', background: T.ink, border: `5px solid ${T.bg}`, boxShadow: '0 4px 12px rgba(0,0,0,.18)' }} />
       )}
-      <div style={{ display: 'flex', marginTop: 14, fontSize: 24, fontWeight: 700, color: T.ink2 }}>
+      <div style={{ display: 'flex', marginTop: 20, fontSize: 22, fontWeight: 700, color: T.ink3 }}>
         {segments.map((s) => (
-          <div key={s.label} style={{ width: `${((s.to - s.from) / range) * 100}%`, color: s.label === activeLabel && frame >= at + 20 ? s.color : T.ink2 }}>
+          <div key={s.label} style={{ width: `${((s.to - s.from) / range) * 100}%`, color: s.label === activeLabel && on ? s.color : T.ink3 }}>
             {s.label}
           </div>
         ))}
       </div>
       {ticks && (
-        <div style={{ position: 'relative', height: 26, marginTop: 4 }}>
+        <div style={{ position: 'relative', height: 24, marginTop: 2 }}>
           {ticks.map((t) => (
-            <span key={t.v} style={{ position: 'absolute', left: `${((t.v - min) / range) * 100}%`, transform: t.v === min ? 'none' : t.v === max ? 'translateX(-100%)' : 'translateX(-50%)', fontSize: 20, color: T.ink3 }}>
+            <span key={t.v} style={{ position: 'absolute', left: `${((t.v - min) / range) * 100}%`, transform: t.v === min ? 'none' : t.v === max ? 'translateX(-100%)' : 'translateX(-50%)', fontSize: 19, color: T.ink3 }}>
               {t.text ?? t.v}
             </span>
           ))}
@@ -210,40 +261,50 @@ export const SegmentScale: React.FC<{
   );
 };
 
-/* ───────── 장면 레이아웃 ───────── */
+/* ───────── 장면 레이아웃: 왼쪽 글, 오른쪽 일러스트 ───────── */
 export const SceneFrame: React.FC<{
   index: number;
   total: number;
-  dark?: boolean;
+  art?: React.ReactNode;
+  artAt?: number;
+  /** 글 영역 너비 비율 (0~1) */
+  split?: number;
   children: React.ReactNode;
-}> = ({ index, total, dark = false, children }) => {
+}> = ({ index, total, art, artAt = 6, split = 0.56, children }) => {
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const inOp = interpolate(frame, [0, 14], [0, 1], clamp);
   const outOp = interpolate(frame, [durationInFrames - 12, durationInFrames], [1, 0], clamp);
 
   return (
-    <AbsoluteFill
-      style={{
-        backgroundColor: dark ? T.dark : T.bg,
-        fontFamily: T.font,
-        color: dark ? '#fff' : T.ink,
-        opacity: Math.min(inOp, outOp),
-      }}
-    >
-      {/* 페이지 점 표시 */}
-      <div style={{ position: 'absolute', top: 44, right: T.margin, display: 'flex', gap: 8 }}>
-        {Array.from({ length: total }).map((_, i) => (
-          <div key={i} style={{ width: i === index ? 22 : 8, height: 8, borderRadius: 4, background: i === index ? (dark ? '#fff' : T.ink) : dark ? 'rgba(255,255,255,0.2)' : T.line }} />
-        ))}
+    <AbsoluteFill style={{ backgroundColor: T.bg, fontFamily: T.sans, color: T.ink, opacity: Math.min(inOp, outOp) }}>
+      {/* 상단: 워드마크 + 페이지 점 */}
+      <div style={{ position: 'absolute', top: 44, left: T.margin, right: T.margin, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 700, color: T.ink2 }}>수면다원검사 결과 안내</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {Array.from({ length: total }).map((_, i) => (
+            <div key={i} style={{ width: i === index ? 26 : 9, height: 9, borderRadius: 5, background: i === index ? T.accent : T.line }} />
+          ))}
+        </div>
       </div>
-      <div style={{ position: 'absolute', top: 0, left: T.margin, right: T.margin, bottom: 0 }}>{children}</div>
+
+      {/* 본문 */}
+      <div style={{ position: 'absolute', top: 120, bottom: 120, left: T.margin, right: T.margin, display: 'flex', alignItems: 'center', gap: 60 }}>
+        <div style={{ flex: `0 0 ${split * 100}%`, maxWidth: `${split * 100}%` }}>{children}</div>
+        {art && (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <Grow at={artAt} style={{ width: '100%', maxWidth: 640 }}>
+              {art}
+            </Grow>
+          </div>
+        )}
+      </div>
     </AbsoluteFill>
   );
 };
 
-/* ───────── 자막: 배경 없이 작은 회색 글자 ───────── */
-export const Captions: React.FC<{ narration: string; dark?: boolean }> = ({ narration, dark }) => {
+/* ───────── 자막 ───────── */
+export const Captions: React.FC<{ narration: string; dark?: boolean }> = ({ narration }) => {
   const frame = useCurrentFrame();
   const { durationInFrames, fps } = useVideoConfig();
   const sentences = splitSentences(narration);
@@ -266,8 +327,10 @@ export const Captions: React.FC<{ narration: string; dark?: boolean }> = ({ narr
   const op = interpolate(frame, [start, start + 8], [0, 1], clamp);
 
   return (
-    <div style={{ position: 'absolute', left: T.margin, right: T.margin, bottom: 52, textAlign: 'center', opacity: op }}>
-      <div style={{ fontFamily: T.font, fontSize: 28, fontWeight: 500, lineHeight: 1.5, color: dark ? 'rgba(255,255,255,0.6)' : T.ink2 }}>{current}</div>
+    <div style={{ position: 'absolute', left: T.margin, right: T.margin, bottom: 44, textAlign: 'center', opacity: op }}>
+      <span style={{ display: 'inline-block', fontFamily: T.sans, fontSize: 27, fontWeight: 500, lineHeight: 1.5, color: T.ink2, background: T.paper, padding: '10px 26px', borderRadius: 14, border: `1px solid ${T.line}` }}>
+        {current}
+      </span>
     </div>
   );
 };

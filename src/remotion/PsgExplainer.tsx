@@ -1,7 +1,7 @@
 import React from 'react';
 import { AbsoluteFill, Audio, Sequence } from 'remotion';
 import type { ExplainerProps, SceneSpec } from '../psg/types';
-import { Captions, T } from './ui';
+import { Captions, FontLoader, T } from './ui';
 import { IntroScene, OutroScene } from './scenes/IntroOutro';
 import { OverviewScene } from './scenes/Overview';
 import { AhiScene } from './scenes/Ahi';
@@ -17,7 +17,8 @@ const DARK: ReadonlySet<SceneSpec['id']> = new Set();
 export const PsgExplainer: React.FC<ExplainerProps> = ({ values, scenes, showCaptions }) => {
   let from = 0;
   return (
-    <AbsoluteFill style={{ backgroundColor: T.bg, fontFamily: T.font }}>
+    <AbsoluteFill style={{ backgroundColor: T.bg, fontFamily: T.sans }}>
+      <FontLoader />
       {scenes.map((s, i) => {
         const start = from;
         from += s.durationInFrames;
