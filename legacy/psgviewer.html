@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>수면다원검사 결과 분석기</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Malgun Gothic','Segoe UI',sans-serif;background:#eef2f7;color:#1a1a2e;min-height:100vh;padding:24px}
+
+.header{background:linear-gradient(135deg,#1a237e,#1565c0);color:#fff;border-radius:16px;padding:28px 32px 24px;margin-bottom:22px;text-align:center}
+.header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.header p{font-size:15px;opacity:.78}
+
+.upload-zone{background:#fff;border:2px dashed #90caf9;border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.drag{background:#e3f2fd;border-color:#1565c0}
+.upload-zone .icon{font-size:46px;margin-bottom:10px}
+.upload-zone h2{font-size:17px;color:#1565c0;margin-bottom:6px}
+.upload-zone p{font-size:14px;color:#888}
+#fileInput{display:none}
+
+.progress{background:#1a237e;color:#fff;border-radius:8px;padding:12px 20px;text-align:center;font-size:15px;margin-bottom:16px;display:none}
+.err{background:#ffebee;color:#c62828;border-radius:8px;padding:12px 20px;font-size:15px;margin-bottom:16px;display:none}
+
+.info-bar{background:#fff;border-radius:12px;padding:16px 22px;margin-bottom:18px;display:none;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.info-bar h3{font-size:13px;color:#888;margin-bottom:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.info-grid{display:flex;flex-wrap:wrap;gap:12px}
+.info-chip{background:#f3f4f6;border-radius:8px;padding:10px 16px}
+.info-chip .lbl{font-size:12px;color:#999;margin-bottom:3px}
+.info-chip .val{font-size:17px;font-weight:700;color:#1a237e}
+
+/* ── 행 레이아웃: 이름+수치 위, 바 아래 ── */
+.mlist{display:flex;flex-direction:column;gap:10px}
+
+.mrow{background:#fff;border-radius:12px;padding:16px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+
+.mrow-top{display:flex;align-items:center;gap:18px;margin-bottom:10px}
+
+.mrow-label{}
+.mrow-name{font-size:24px;font-weight:700;color:#333;line-height:1.35}
+.mrow-sub{font-size:20px;color:#aaa;margin-top:3px}
+
+.mrow-val{text-align:left;flex-shrink:0}
+.mrow-num{font-size:30px;font-weight:800;line-height:1}
+.mrow-unit{font-size:12px;color:#aaa;margin-top:2px}
+.na{font-size:14px;color:#ccc;font-style:italic}
+
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-top:5px;white-space:nowrap}
+
+.mrow-bar{}
+
+/* VAS bar */
+.vas-bar{position:relative;height:22px;border-radius:11px;overflow:visible;margin:28px 0 5px 0}
+.vas-track{height:100%;border-radius:11px;overflow:hidden}
+.vas-marker{position:absolute;top:50%;transform:translate(-50%,-75%);
+            width:48px;height:48px;z-index:5;pointer-events:none;
+            filter:drop-shadow(0 2px 6px rgba(0,0,0,.32))}
+.vas-ticks{position:relative;height:16px;margin-top:2px}
+.vas-ticks span{position:absolute;font-size:11px;color:#bbb;transform:translateX(-50%)}
+
+/* RMI 섹션 */
+.rmi-card{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-top:10px}
+.rmi-card-title{font-size:15px;font-weight:700;color:#333;margin-bottom:3px}
+.rmi-card-sub{font-size:12px;color:#aaa;margin-bottom:16px}
+
+.rmi-row{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.rmi-row:last-child{margin-bottom:0}
+.rmi-label-wrap{width:210px;flex-shrink:0}
+.rmi-lbl{font-size:14px;font-weight:600;color:#555}
+.rmi-val-wrap{width:108px;flex-shrink:0;text-align:right}
+.rmi-num{font-size:24px;font-weight:800;line-height:1}
+.rmi-unit{font-size:12px;color:#aaa}
+.rmi-bar-wrap{flex:1;min-width:0}
+.rmi-track{height:16px;border-radius:8px;background:#f0f0f0;position:relative;overflow:visible}
+.rmi-fill{height:100%;border-radius:8px}
+.rmi-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:24px;
+         background:#1a237e;border-radius:3px;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.rmi-ticks{display:flex;justify-content:space-between;font-size:11px;color:#ccc;margin-top:3px}
+
+/* 디버그 */
+.debug-section{margin-top:20px;display:none}
+.debug-toggle{font-size:12px;color:#90caf9;cursor:pointer;text-decoration:underline;display:block;text-align:right;margin-bottom:6px}
+.debug-text{background:#1a1a2e;color:#a5d6a7;font-family:monospace;font-size:11px;padding:14px;border-radius:8px;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+
+@media(max-width:640px){
+  .mrow,.rmi-row{flex-wrap:wrap}
+  .mrow-label,.rmi-label-wrap{width:100%}
+  .mrow-val,.rmi-val-wrap{width:auto}
+  .mrow-bar,.rmi-bar-wrap{width:100%;flex:none}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>수면다원검사 결과 분석기</h1>
+  <p>REM Logic 형식의 수면다원검사 PDF를 업로드하면 주요 지표를 자동으로 추출·시각화합니다</p>
+</div>
+
+<div class="upload-zone" id="zone">
+  <div class="icon">📋</div>
+  <h2>PDF 파일을 여기에 드래그하거나 클릭하여 업로드</h2>
+  <p>수면다원검사 결과지 PDF 파일 (REM Logic 형식)</p>
+  <input type="file" id="fileInput" accept=".pdf">
+</div>
+
+<div class="progress" id="prog">PDF 분석 중... 잠시 기다려 주세요.</div>
+<div class="err" id="err"></div>
+
+<div class="info-bar" id="infoBar">
+  <h3>수면 요약</h3>
+  <div class="info-grid" id="infoGrid"></div>
+</div>
+
+<div id="mainList" style="display:none"></div>
+
+<div class="debug-section" id="dbgSec">
+  <span class="debug-toggle" onclick="toggleDebug()">▼ 추출된 텍스트 보기 (디버그)</span>
+  <div class="debug-text" id="dbgText" style="display:none"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const zone = document.getElementById('zone');
+const fi   = document.getElementById('fileInput');
+
+zone.addEventListener('click', () => fi.click());
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f?.type === 'application/pdf') load(f);
+  else showErr('PDF 파일만 업로드 가능합니다.');
+});
+fi.addEventListener('change', e => { if (e.target.files[0]) load(e.target.files[0]); });
+
+function showErr(msg){ const el=document.getElementById('err'); el.textContent=msg; el.style.display='block'; }
+function toggleDebug(){ const t=document.getElementById('dbgText'); t.style.display=t.style.display==='none'?'block':'none'; }
+
+/* ──────── PDF 로드 & 좌표 기반 텍스트 재구성 ──────── */
+async function load(file) {
+  document.getElementById('prog').style.display = 'block';
+  document.getElementById('err').style.display  = 'none';
+  document.getElementById('mainList').style.display = 'none';
+  document.getElementById('infoBar').style.display  = 'none';
+  try {
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const linesByPage = [];
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const pg = await pdf.getPage(i);
+      const vp = pg.getViewport({ scale: 1 });
+      const ct = await pg.getTextContent();
+
+      const items = ct.items
+        .filter(it => it.str.trim() !== '')
+        .map(it => ({
+          str: it.str,
+          x: Math.round(it.transform[4]),
+          y: Math.round(vp.height - it.transform[5])
+        }));
+
+      items.sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
+
+      const THRESH = 8;
+      const lines  = [];
+      let cur = null;
+      for (const it of items) {
+        if (!cur || Math.abs(it.y - cur.y) > THRESH) { cur={y:it.y,parts:[]}; lines.push(cur); }
+        cur.parts.push(it.str);
+      }
+      linesByPage.push(lines.map(l => l.parts.join(' ')).join('\n'));
+    }
+
+    const text = linesByPage.join('\n');
+    document.getElementById('dbgText').textContent = text;
+    document.getElementById('dbgSec').style.display = 'block';
+    render(extract(text));
+  } catch(e) {
+    showErr('PDF 읽기 오류: ' + e.message);
+    console.error(e);
+  } finally {
+    document.getElementById('prog').style.display = 'none';
+  }
+}
+
+/* ──────── 수치 추출 ──────── */
+function first(text, pairs) {
+  for (const [re, gi] of pairs) {
+    const m = text.match(re);
+    if (m && m[gi] != null && m[gi] !== '') return parseFloat(m[gi]);
+  }
+  return null;
+}
+
+function extract(text) {
+  const v = {};
+
+  v.ahi = first(text, [
+    [/Apnea\s*\+\s*Hypopnea\s*\(A\+H\)[^\d]{0,10}\d+[^\d./]{0,5}([\d.]+)\s*\/\s*h/i, 1],
+    [/\(A\s*\+\s*H\)[^\d]{0,10}\d+[^\d./]{0,5}([\d.]+)\s*\/\s*h/i,                   1],
+    [/A\s*\+\s*H[^\d]{0,10}\d+[^\d./]{0,5}([\d.]+)\s*\/\s*h/i,                       1],
+    [/Hypopnea[^\d]{0,30}\d{1,3}\s+([\d.]+)\s*\/\s*h/i,                               1],
+  ]);
+
+  v.rdi = first(text, [[/\bRDI\b\s*:?\s*([\d.]+)/, 1]]);
+
+  {
+    const m = text.match(/of\s+Sleep\s+Period\s+([\d.]+)\s*%?\s+([\d.]+)\s*%?\s+([\d.]+)\s*%?\s+([\d.]+)\s*%?/i);
+    if (m) { v.n3pct = parseFloat(m[3]); v.rempct = parseFloat(m[4]); }
+  }
+
+  v.snorepct = first(text, [
+    [/Relative\s+Snoring\s+Time\s*:?\s*([\d.]+)/i,               1],
+    [/Snore\s+Time\s*:?\s*[\d.]+\s+minutes\s+([\d.]+)/i,         1],
+    [/Snore\s+Time\s*:?\s*([\d.]+)\s*%/i,                        1],
+  ]);
+
+  v.lowestspo2 = first(text, [[/Lowest\s+Oxygen\s+Saturation\s*:?\s*([\d.]+)/i, 1]]);
+  v.fli        = first(text, [[/Flow\s+Limitation\s+Index\s*[\[%\]]{0,3}\s*([\d.]+)/i, 1]]);
+
+  const rmiStart = text.indexOf('RMI Statistics');
+  const posStart = text.indexOf('Position Statistics');
+  const rmiEnd   = (posStart > rmiStart && posStart > 0) ? posStart : rmiStart + 3000;
+  const rmiSec   = rmiStart >= 0 ? text.substring(rmiStart, rmiEnd) : text;
+
+  for (const [label, key] of [['Supine','rmiSupine'],['Left','rmiLeft'],['Right','rmiRight']]) {
+    const re = new RegExp(`\\b${label}\\b\\s+(\\d+)(?!\\.\\d)\\s+([\\d.]+)`, 'i');
+    const m  = rmiSec.match(re);
+    if (m) { const c = parseFloat(m[2]); if (c < 150) v[key] = c; }
+  }
+
+  v.tst = first(text, [[/Total\s+Sleep\s+Time\s*:?\s*([\d.]+)\s*minutes/i, 1]]);
+  v.eff = first(text, [[/Sleep\s+Efficiency\s*:?\s*([\d.]+)/i,             1]]);
+
+  return v;
+}
+
+/* ──────── 지표 설정 ──────── */
+// reverse:true → 녹색(정상)이 왼쪽, 빨강(나쁨)이 오른쪽
+// zones는 항상 낮은값→높은값 순으로 정의 (getSeverity 로직 유지)
+const METRICS = [
+  {
+    id:'ahi', name:'AHI (무호흡-저호흡 지수)', sub:'Apnea + Hypopnea Index', unit:'회/시간',
+    min:0, max:30,
+    zones:[
+      {t:5,  c:'#4caf50', l:'정상'},
+      {t:15, c:'#ffc107', l:'경증'},
+      {t:22, c:'#ff7043', l:'중등도'},
+      {t:30, c:'#e53935', l:'중증'}
+    ],
+    ticks:[0, {v:5, em:true}, 15, 22, 30]
+  },
+  {
+    id:'rdi', name:'RDI (호흡 장애 지수) - 각성', sub:'Respiratory Disturbance Index', unit:'회/시간',
+    min:0, max:30,
+    zones:[
+      {t:5,  c:'#4caf50', l:'정상'},
+      {t:15, c:'#ffc107', l:'경증'},
+      {t:22, c:'#ff7043', l:'중등도'},
+      {t:30, c:'#e53935', l:'중증'}
+    ],
+    ticks:[0, {v:5, em:true}, 15, 22, 30]
+  },
+  {
+    id:'n3pct', name:'N3 수면 (깊은 수면)', sub:'육체 회복', unit:'%',
+    min:5, max:20, reverse:true,   // 녹색(정상) → 왼쪽
+    zones:[
+      {t:10, c:'#e53935', l:'매우 부족'},
+      {t:15, c:'#ffc107', l:'부족'},
+      {t:20, c:'#4caf50', l:'정상'}
+    ],
+    ticks:[20, 15, 10, 5]   // 역순으로 표시 (왼쪽=20, 오른쪽=5)
+  },
+  {
+    id:'rempct', name:'REM 수면', sub:'두뇌 회복', unit:'%',
+    min:5, max:30, reverse:true,   // 녹색(정상) → 왼쪽
+    zones:[
+      {t:15, c:'#e53935', l:'부족'},
+      {t:25, c:'#4caf50', l:'정상'},
+      {t:30, c:'#ffc107', l:'과다'}
+    ],
+    ticks:[30, 25, 15, 5]
+  },
+  {
+    id:'snorepct', name:'코골이 시간', sub:'Snore Time (수면 대비 %)', unit:'%',
+    min:5, max:55,
+    zones:[
+      {t:15, c:'#4caf50', l:'정상'},
+      {t:30, c:'#ffc107', l:'경증'},
+      {t:45, c:'#ff7043', l:'중등도'},
+      {t:55, c:'#e53935', l:'중증'}
+    ],
+    ticks:[5, 15, 30, 45, 55]
+  },
+  {
+    id:'lowestspo2', name:'최저 산소포화도', sub:'Lowest SpO₂', unit:'%',
+    min:75, max:95, reverse:true,  // 녹색(정상) → 왼쪽
+    zones:[
+      {t:82, c:'#e53935', l:'중증 저하'},
+      {t:88, c:'#ff7043', l:'중등도 저하'},
+      {t:92, c:'#ffc107', l:'경증 저하'},
+      {t:95, c:'#4caf50', l:'정상'}
+    ],
+    ticks:[95, 92, 88, 82, 75]
+  },
+  {
+    id:'fli', name:'호흡 병목 지수', sub:'Flow Limitation Index', unit:'%',
+    min:10, max:40,
+    zones:[
+      {t:20, c:'#4caf50', l:'정상'},
+      {t:30, c:'#ffc107', l:'경증'},
+      {t:40, c:'#e53935', l:'중증'}
+    ],
+    ticks:[10, 20, 30, 40]
+  }
+];
+
+/* ──────── 렌더링 헬퍼 ──────── */
+function getSeverity(metric, val) {
+  if (val == null) return null;
+  for (const z of metric.zones) { if (val <= z.t) return z; }
+  return metric.zones[metric.zones.length - 1];
+}
+
+// reverse:true 일 때 → 좌=고값(녹색), 우=저값(빨강)
+// zones는 저값→고값 순 정의이므로, 역순으로 그라디언트 구성
+function buildGrad(metric) {
+  const range = metric.max - metric.min;
+
+  if (metric.reverse) {
+    // 높은 값(좋은 쪽)이 왼쪽 → 역방향 순회
+    const stops = [];
+    let prev = metric.max;
+    for (let i = metric.zones.length - 1; i >= 0; i--) {
+      const z          = metric.zones[i];
+      const lowerBound = i > 0 ? metric.zones[i - 1].t : metric.min;
+      const posA = ((metric.max - prev)       / range * 100).toFixed(1);
+      const posB = ((metric.max - lowerBound) / range * 100).toFixed(1);
+      stops.push(`${z.c} ${posA}%`, `${z.c} ${posB}%`);
+      prev = lowerBound;
+    }
+    return `linear-gradient(to right,${stops.join(',')})`;
+  }
+
+  // 정방향: 낮은 값(왼쪽) → 높은 값(오른쪽)
+  let prev = metric.min;
+  const stops = [];
+  for (const z of metric.zones) {
+    const a = ((prev - metric.min) / range * 100).toFixed(1);
+    const b = ((z.t  - metric.min) / range * 100).toFixed(1);
+    stops.push(`${z.c} ${a}%`, `${z.c} ${b}%`);
+    prev = z.t;
+  }
+  return `linear-gradient(to right,${stops.join(',')})`;
+}
+
+// 마커 위치: reverse 시 값이 클수록 왼쪽(0%)
+function markerPct(metric, val) {
+  if (val == null) return null;
+  const c = Math.max(metric.min, Math.min(metric.max, val));
+  const p = (c - metric.min) / (metric.max - metric.min) * 100;
+  return metric.reverse ? (100 - p).toFixed(1) : p.toFixed(1);
+}
+
+// 틱 위치: reverse 시 (max-v)/range
+function tickPct(metric, tv) {
+  const v = typeof tv === 'object' ? tv.v : tv;
+  if (metric.reverse) return ((metric.max - v) / (metric.max - metric.min) * 100).toFixed(1);
+  return ((v - metric.min) / (metric.max - metric.min) * 100).toFixed(1);
+}
+
+/* ── VAS 얼굴 아이콘 ── */
+function makeFaceSVG(sev) {
+  const c = sev ? sev.c : '#9e9e9e';
+  const exprMap = {'#4caf50':'great','#ffc107':'ok','#ff7043':'bad','#e53935':'terrible'};
+  const expr = exprMap[c] || 'ok';
+
+  const eyeL = `<circle cx="15" cy="17" r="2.8" fill="#333"/>`;
+  const eyeR = `<circle cx="25" cy="17" r="2.8" fill="#333"/>`;
+  let brows = '', mouth = '';
+
+  if (expr === 'great') {
+    // 활짝 웃음
+    brows = `<path d="M12,13 Q15,11 18,13" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+             <path d="M22,13 Q25,11 28,13" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>`;
+    mouth = `<path d="M10,24 Q20,35 30,24" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  } else if (expr === 'ok') {
+    // 살짝 불편한 표정 (약한 찌푸림)
+    mouth = `<path d="M13,27 Q20,23 27,27" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  } else if (expr === 'bad') {
+    // 약한 찌푸림
+    mouth = `<path d="M13,28 Q20,23 27,28" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  } else {
+    // 심한 찌푸림 + 걱정 눈썹
+    brows = `<path d="M12,14 Q15,11 18,13" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+             <path d="M22,13 Q25,11 28,14" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+    mouth = `<path d="M10,30 Q20,20 30,30" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>`;
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 40 40">
+    <circle cx="20" cy="20" r="18" fill="${c}" stroke="#fff" stroke-width="2.5"/>
+    ${brows}${eyeL}${eyeR}${mouth}
+  </svg>`;
+}
+
+/* ── 한 줄 행 생성 ── */
+function makeRow(metric, val) {
+  const sev  = getSeverity(metric, val);
+  const pct  = markerPct(metric, val);
+  const grad = buildGrad(metric);
+
+  const ticksHTML = metric.ticks.map(tv => {
+    const v  = typeof tv === 'object' ? tv.v : tv;
+    const em = typeof tv === 'object' && tv.em;
+    const extra = em ? 'font-size:22px;font-weight:900;color:#444;margin-top:-4px;' : '';
+    return `<span style="left:${tickPct(metric,v)}%;${extra}">${v}</span>`;
+  }).join('');
+
+  const valHTML = val != null
+    ? `<div style="display:flex;align-items:baseline;gap:4px">
+         <span class="mrow-num" style="color:${sev?.c||'#333'}">${val.toFixed(1)}</span>
+         <span class="mrow-unit">${metric.unit}</span>
+       </div>`
+    : `<div class="na">인식 불가</div>`;
+
+  const badgeHTML = sev
+    ? `<div class="badge" style="background:${sev.c}22;color:${sev.c};border:1px solid ${sev.c}55">${sev.l}</div>`
+    : '';
+
+  const markerHTML = pct != null
+    ? `<div class="vas-marker" style="left:${pct}%">${makeFaceSVG(sev)}</div>` : '';
+
+  const d = document.createElement('div');
+  d.className = 'mrow';
+  d.innerHTML = `
+    <div class="mrow-top">
+      <div class="mrow-label">
+        <div class="mrow-name">${metric.name}</div>
+        <div class="mrow-sub">${metric.sub}</div>
+      </div>
+      <div class="mrow-val">${valHTML}${badgeHTML}</div>
+    </div>
+    <div class="mrow-bar">
+      <div class="vas-bar">
+        <div class="vas-track" style="background:${grad}"></div>
+        ${markerHTML}
+      </div>
+      <div class="vas-ticks">${ticksHTML}</div>
+    </div>`;
+  return d;
+}
+
+/* ── RMI 섹션 ── */
+function rmiColor(v) {
+  if (v == null) return '#ccc';
+  return v < 20 ? '#4caf50' : v < 35 ? '#ffc107' : '#e53935';
+}
+
+function makeRmiSection(values) {
+  const RMI_MAX = 60;
+  const rows = [
+    {key:'rmiSupine', label:'등 자세 (Supine)'},
+    {key:'rmiLeft',   label:'왼쪽 자세 (Left)'},
+    {key:'rmiRight',  label:'오른쪽 자세 (Right)'}
+  ];
+
+  const rowsHTML = rows.map(r => {
+    const val = values[r.key];
+    const c   = rmiColor(val);
+    const pct = val != null ? Math.min(100, val / RMI_MAX * 100).toFixed(1) : 0;
+    const lbl = val == null ? '' : val < 20 ? '낮음' : val < 35 ? '주의' : '높음';
+    const badge = val != null
+      ? `<div class="badge" style="background:${c}22;color:${c};border:1px solid ${c}55;margin-top:4px">${lbl}</div>` : '';
+
+    return `
+      <div class="rmi-row">
+        <div class="rmi-label-wrap"><div class="rmi-lbl">${r.label}</div></div>
+        <div class="rmi-val-wrap">
+          ${val != null
+            ? `<div class="rmi-num" style="color:${c}">${val.toFixed(1)}</div>
+               <div class="rmi-unit">회/시간</div>`
+            : `<div class="na">인식 불가</div>`}
+          ${badge}
+        </div>
+        <div class="rmi-bar-wrap">
+          <div class="rmi-track">
+            <div class="rmi-fill" style="width:${pct}%;background:${c}"></div>
+            ${val != null ? `<div class="rmi-pin" style="left:${pct}%"></div>` : ''}
+          </div>
+          <div class="rmi-ticks"><span>0</span><span>20</span><span>35</span><span>60</span></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const d = document.createElement('div');
+  d.className = 'rmi-card';
+  d.innerHTML = `
+    <div class="rmi-card-title">자세별 호흡 불안정성 (RMI)</div>
+    <div class="rmi-card-sub">Respiratory Mechanic Instability Index by Position &nbsp;·&nbsp; 기준: &lt;20 낮음 / 20–35 주의 / &gt;35 높음</div>
+    ${rowsHTML}`;
+  return d;
+}
+
+/* ── 전체 렌더 ── */
+function render(v) {
+  const chips = [];
+  if (v.tst) chips.push({lbl:'총 수면 시간', val:(v.tst/60).toFixed(1)+' 시간'});
+  if (v.eff) chips.push({lbl:'수면 효율',    val:v.eff.toFixed(0)+' %'});
+  chips.push({lbl:'AHI',       val: v.ahi        != null ? v.ahi.toFixed(1)+'/h'        : '—'});
+  chips.push({lbl:'최저 SpO₂', val: v.lowestspo2 != null ? v.lowestspo2.toFixed(0)+' %' : '—'});
+
+  document.getElementById('infoGrid').innerHTML = chips.map(c =>
+    `<div class="info-chip"><div class="lbl">${c.lbl}</div><div class="val">${c.val}</div></div>`
+  ).join('');
+  document.getElementById('infoBar').style.display = 'block';
+
+  const list = document.getElementById('mainList');
+  list.innerHTML = '';
+  list.className = 'mlist';
+
+  METRICS.forEach(m => list.appendChild(makeRow(m, v[m.id] ?? null)));
+  list.appendChild(makeRmiSection(v));
+  list.style.display = 'flex';
+  list.style.flexDirection = 'column';
+}
+</script>
+</body>
+</html>

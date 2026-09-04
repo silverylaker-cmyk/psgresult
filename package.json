@@ -1,0 +1,35 @@
+{
+  "name": "psgresult",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "수면다원검사(PSG) 결과 PDF를 올리면 환자용 설명 영상(Remotion + TTS)과 시각화 대시보드를 보여주는 웹앱",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "server": "node server/index.mjs",
+    "studio": "remotion studio",
+    "render": "node scripts/render.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/player": "4.0.520",
+    "pdfjs-dist": "6.3.289",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.520"
+  },
+  "devDependencies": {
+    "@remotion/bundler": "4.0.520",
+    "@remotion/cli": "4.0.520",
+    "@remotion/renderer": "4.0.520",
+    "@types/express": "5.0.6",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@vitejs/plugin-react": "6.1.1",
+    "express": "5.2.1",
+    "typescript": "5.9.3",
+    "vite": "8.2.2"
+  }
+}

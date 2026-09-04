@@ -1,0 +1,98 @@
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo','Segoe UI',sans-serif;background:#eef2f7;color:#1a1a2e;min-height:100vh;padding:24px}
+button{font-family:inherit}
+
+.header{background:linear-gradient(135deg,#1b3a4b,#2a6f7f);color:#fff;border-radius:16px;padding:28px 32px 24px;margin-bottom:22px;text-align:center}
+.header h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.header p{font-size:15px;opacity:.78}
+
+.upload-zone{background:#fff;border:2px dashed #90caf9;border-radius:14px;padding:36px 24px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.drag{background:#e3f2fd;border-color:#1565c0}
+.upload-zone .icon{font-size:46px;margin-bottom:10px}
+.upload-zone h2{font-size:17px;color:#1565c0;margin-bottom:6px}
+.upload-zone p{font-size:14px;color:#888}
+.upload-zone .demo{margin-top:14px}
+.upload-zone .demo button{background:none;border:1px solid #90caf9;color:#1565c0;border-radius:20px;padding:6px 16px;font-size:13px;cursor:pointer}
+.upload-zone .demo button:hover{background:#fff}
+
+.progress{background:#1b3a4b;color:#fff;border-radius:8px;padding:12px 20px;text-align:center;font-size:15px;margin-bottom:16px}
+.err{background:#ffebee;color:#c62828;border-radius:8px;padding:12px 20px;font-size:15px;margin-bottom:16px}
+
+/* ── 영상 패널 ── */
+.video-panel{background:#fff;border-radius:16px;padding:18px 22px 20px;margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.video-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.video-panel-head h3{font-size:18px;font-weight:700;color:#1b3a4b}
+.video-panel-head p{font-size:13px;color:#888;margin-top:2px}
+.player-wrap{border-radius:12px;overflow:hidden;background:#000;aspect-ratio:16/9;width:100%}
+.player-wrap>div{width:100%!important;height:100%!important}
+.video-controls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;margin-top:12px;font-size:13px;color:#555}
+.video-controls label{display:flex;align-items:center;gap:6px}
+.video-controls select,.video-controls input[type=range]{font-size:13px}
+.video-controls select{padding:4px 8px;border-radius:6px;border:1px solid #cfd8dc;max-width:260px}
+.btn{background:#2a6f7f;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer}
+.btn:hover{background:#1b3a4b}
+.btn:disabled{background:#b0bec5;cursor:not-allowed}
+.btn.secondary{background:#fff;color:#2a6f7f;border:1px solid #2a6f7f}
+.btn.secondary:hover{background:#e6f1f3}
+.hint{font-size:12px;color:#999;margin-top:8px;line-height:1.5}
+.hint.warn{color:#b4540f}
+.narration-status{font-size:12px;color:#2a6f7f;font-weight:700}
+
+/* ── 요약 ── */
+.info-bar{background:#fff;border-radius:12px;padding:16px 22px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.info-bar h3{font-size:13px;color:#888;margin-bottom:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.info-grid{display:flex;flex-wrap:wrap;gap:12px}
+.info-chip{background:#f3f4f6;border-radius:8px;padding:10px 16px}
+.info-chip .lbl{font-size:12px;color:#999;margin-bottom:3px}
+.info-chip .val{font-size:17px;font-weight:700;color:#1b3a4b}
+
+/* ── 지표 행 ── */
+.mlist{display:flex;flex-direction:column;gap:10px}
+.mrow{background:#fff;border-radius:12px;padding:16px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.mrow-top{display:flex;align-items:center;gap:18px;margin-bottom:10px}
+.mrow-name{font-size:24px;font-weight:700;color:#333;line-height:1.35}
+.mrow-sub{font-size:20px;color:#aaa;margin-top:3px}
+.mrow-val{text-align:left;flex-shrink:0}
+.mrow-num{font-size:30px;font-weight:800;line-height:1}
+.mrow-unit{font-size:12px;color:#aaa;margin-top:2px}
+.na{font-size:14px;color:#ccc;font-style:italic}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700;margin-top:5px;white-space:nowrap}
+
+.vas-bar{position:relative;height:22px;border-radius:11px;overflow:visible;margin:28px 0 5px 0}
+.vas-track{height:100%;border-radius:11px;overflow:hidden}
+.vas-marker{position:absolute;top:50%;transform:translate(-50%,-75%);width:48px;height:48px;z-index:5;pointer-events:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.32))}
+.vas-ticks{position:relative;height:16px;margin-top:2px}
+.vas-ticks span{position:absolute;font-size:11px;color:#bbb;transform:translateX(-50%)}
+.vas-ticks span.em{font-size:22px;font-weight:900;color:#444;margin-top:-4px}
+
+/* ── RMI ── */
+.rmi-card{background:#fff;border-radius:12px;padding:18px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-top:10px}
+.rmi-card-title{font-size:15px;font-weight:700;color:#333;margin-bottom:3px}
+.rmi-card-sub{font-size:12px;color:#aaa;margin-bottom:16px}
+.rmi-row{display:flex;align-items:center;gap:18px;margin-bottom:14px}
+.rmi-row:last-child{margin-bottom:0}
+.rmi-label-wrap{width:210px;flex-shrink:0}
+.rmi-lbl{font-size:14px;font-weight:600;color:#555}
+.rmi-val-wrap{width:108px;flex-shrink:0;text-align:right}
+.rmi-num{font-size:24px;font-weight:800;line-height:1}
+.rmi-unit{font-size:12px;color:#aaa}
+.rmi-bar-wrap{flex:1;min-width:0}
+.rmi-track{height:16px;border-radius:8px;background:#f0f0f0;position:relative;overflow:visible}
+.rmi-fill{height:100%;border-radius:8px}
+.rmi-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:24px;background:#1b3a4b;border-radius:3px;border:2px solid #fff;box-shadow:0 2px 5px rgba(0,0,0,.3)}
+.rmi-ticks{display:flex;justify-content:space-between;font-size:11px;color:#ccc;margin-top:3px}
+
+/* ── 디버그 ── */
+.debug-section{margin-top:20px}
+.debug-toggle{font-size:12px;color:#90caf9;cursor:pointer;text-decoration:underline;display:block;text-align:right;margin-bottom:6px;background:none;border:none;width:100%}
+.debug-text{background:#1a1a2e;color:#a5d6a7;font-family:monospace;font-size:11px;padding:14px;border-radius:8px;max-height:220px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+
+@media(max-width:640px){
+  body{padding:12px}
+  .mrow-top,.rmi-row{flex-wrap:wrap}
+  .rmi-label-wrap{width:100%}
+  .rmi-val-wrap{width:auto}
+  .rmi-bar-wrap{width:100%;flex:none}
+  .mrow-name{font-size:19px}
+  .mrow-sub{font-size:15px}
+}
