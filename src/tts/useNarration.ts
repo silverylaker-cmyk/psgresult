@@ -3,7 +3,8 @@ import type { PlayerRef } from '@remotion/player';
 import { sceneIndexAt, sceneStartFrame, splitSentences } from '../psg/script';
 import type { SceneSpec } from '../psg/types';
 
-export type NarrationMode = 'browser' | 'server' | 'off';
+/** browser: Web Speech API · cloud: 합성된 오디오 파일(장면에 audioSrc) · off: 자막만 */
+export type NarrationMode = 'browser' | 'cloud' | 'off';
 
 export interface VoiceOption {
   name: string;

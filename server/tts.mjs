@@ -1,5 +1,6 @@
 /**
  * TTS 공급자. 텍스트 → MP3 Buffer.
+ *   google : Google Cloud Text-to-Speech (GOOGLE_TTS_API_KEY 필요, 유료 · 한국어 품질 가장 좋음: Chirp 3 HD)
  *   openai : OpenAI Audio API (OPENAI_API_KEY 필요, 유료)
  *   edge   : Microsoft Edge 읽어주기 음성 (무료, 비공식 · `npm i msedge-tts` 필요)
  */
@@ -7,15 +8,42 @@
 export function providerName() {
   const p = (process.env.TTS_PROVIDER || '').toLowerCase();
   if (p === 'none') return null;
-  if (p === 'openai' || p === 'edge') return p;
+  if (p === 'google' || p === 'openai' || p === 'edge') return p;
+  if (process.env.GOOGLE_TTS_API_KEY) return 'google';
   return process.env.OPENAI_API_KEY ? 'openai' : null;
 }
 
 export async function synthesize(text) {
   const p = providerName();
+  if (p === 'google') return googleTts(text);
   if (p === 'openai') return openaiTts(text);
   if (p === 'edge') return edgeTts(text);
   throw new Error('TTS 공급자가 설정되지 않았습니다');
+}
+
+async function googleTts(text, voice = process.env.GOOGLE_TTS_VOICE || 'ko-KR-Chirp3-HD-Aoede') {
+  const key = process.env.GOOGLE_TTS_API_KEY;
+  if (!key) throw new Error('GOOGLE_TTS_API_KEY 가 없습니다');
+  const r = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${encodeURIComponent(key)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      input: { text },
+      voice: { languageCode: 'ko-KR', name: voice },
+      audioConfig: { audioEncoding: 'MP3', speakingRate: Number(process.env.GOOGLE_TTS_RATE || 1) },
+    }),
+  });
+  if (!r.ok) {
+    const body = await r.text();
+    // 선택한 음성이 지원되지 않으면 Neural2 로 한 번 더 시도
+    if (voice !== 'ko-KR-Neural2-A' && (r.status === 400 || r.status === 404)) {
+      console.warn(`[tts] ${voice} 실패(${r.status}), ko-KR-Neural2-A 로 재시도`);
+      return googleTts(text, 'ko-KR-Neural2-A');
+    }
+    throw new Error(`Google TTS 오류 ${r.status}: ${body}`);
+  }
+  const { audioContent } = await r.json();
+  return Buffer.from(audioContent, 'base64');
 }
 
 async function openaiTts(text) {

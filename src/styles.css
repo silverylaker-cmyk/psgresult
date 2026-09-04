@@ -96,3 +96,25 @@ button{font-family:inherit}
   .mrow-name{font-size:19px}
   .mrow-sub{font-size:15px}
 }
+
+/* ── 환자용 링크 / 설정 ── */
+.share-section{margin-top:14px;display:flex;flex-direction:column;gap:12px}
+.share-box{display:flex;gap:16px;align-items:flex-start;background:#f6f9fb;border:1px solid #d5e3ea;border-radius:12px;padding:14px 16px}
+.share-qr{flex-shrink:0;border-radius:8px;background:#fff;padding:4px;border:1px solid #e0e8ee}
+.share-body{flex:1;min-width:0}
+.share-title{font-size:14px;font-weight:700;color:#1b3a4b;margin-bottom:8px}
+.share-url{width:100%;font-size:13px;padding:8px 10px;border:1px solid #cfd8dc;border-radius:8px;background:#fff;color:#333;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.share-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.share-actions .btn{padding:7px 14px;font-size:13px;text-decoration:none;display:inline-block}
+.settings-box{margin-top:14px;background:#fffdf7;border:1px solid #efe4c8;border-radius:12px;padding:14px 16px}
+.settings-title{font-size:14px;font-weight:700;color:#7a5a12;margin-bottom:6px}
+.settings-status{font-size:12px;color:#777;margin-bottom:10px}
+.settings-row{display:flex;flex-direction:column;gap:4px;font-size:13px;color:#555;margin-bottom:10px}
+.settings-row input,.settings-row select{font-size:13px;padding:7px 10px;border:1px solid #cfd8dc;border-radius:8px;background:#fff;font-family:inherit}
+.patient .header{padding:22px 20px 18px}
+.patient .header h1{font-size:22px}
+@media(max-width:640px){
+  .share-box{flex-direction:column}
+  .video-panel{padding:14px 12px 16px}
+  .video-panel-head h3{font-size:16px}
+}

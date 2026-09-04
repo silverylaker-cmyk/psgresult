@@ -31,31 +31,52 @@ npm run dev        # http://localhost:5173
 ```
 
 PDF 를 올리거나 「예시 결과로 영상 미리보기」를 누르면 영상 패널이 나타납니다.
-**음성은 브라우저 내장 음성(Web Speech API)** 을 쓰므로 서버나 API 키 없이 바로 동작합니다.
-Chrome / Edge 에서 한국어 음성이 가장 자연스럽습니다. (Windows 에 한국어 음성이 없으면 설정 → 시간 및 언어 → 음성에서 추가)
-
-### 병원 PC / 웹서버에 배포
-
-```bash
-npm run build      # dist/ 생성 — 정적 파일이므로 아무 웹서버에나 올리면 됩니다
-npm run preview    # 빌드 결과 미리보기
-```
+기본 음성은 브라우저 내장 음성(Web Speech API)이라 서버나 API 키 없이 바로 동작하지만 품질은 떨어집니다. 아래 「고품질 음성」을 설정하면 Google 음성으로 바뀝니다.
 
 PDF 는 브라우저 안에서만 처리되며 서버로 전송되지 않습니다.
 
-## 선택 기능: 고품질 음성 + MP4 저장
+### 배포
 
-브라우저 음성 대신 클라우드 TTS 를 쓰고, 영상을 MP4 파일로 저장하려면 서버를 함께 띄웁니다.
+- **GitHub Pages(자동)**: `main` 또는 `claude/**` 브랜치에 푸시하면 `.github/workflows/pages.yml` 이 빌드해서 배포합니다. 저장소 Settings → Pages → Source 는 "GitHub Actions" 여야 합니다.
+- **직접**: `npm run build` 로 만든 `dist/` 를 아무 정적 웹서버에 올리면 됩니다.
+
+## 환자용 링크 (서버 없이 동작)
+
+영상 패널의 「📱 환자용 링크」를 누르면 링크·QR 코드가 나옵니다. 링크 복사 후 병원의 문자 발송 시스템이나 카카오톡에 붙여 넣어 보내면 됩니다.
+
+- 링크에는 검사 **수치만** 들어 있습니다 (`#v=ahi:22.4;spo2:82;…`). 이름·생년월일 등 개인정보는 없어 링크만으로는 누구의 결과인지 알 수 없습니다.
+- 환자 휴대폰에서 열면 업로드 화면 없이 영상만 나오고, 같은 수치로 영상이 다시 만들어져 재생됩니다. 서버에 아무것도 저장되지 않습니다.
+- 고품질 음성(아래)이 배포 빌드에 설정돼 있으면 환자 휴대폰에서도 Google 음성이 나오고, 없으면 휴대폰 내장 음성(iPhone: 유나, Android: Google TTS)을 씁니다.
+
+## 고품질 음성 (Google Cloud Text-to-Speech)
+
+한국어 품질이 가장 좋은 Google **Chirp 3 HD** 음성을 기본으로 씁니다 (Neural2·WaveNet 도 선택 가능). 영상 하나가 약 1,500자라 Chirp 3 HD 기준 약 60원, Neural2 기준 약 30원입니다.
+
+1. Google Cloud 콘솔에서 프로젝트를 만들고 **Cloud Text-to-Speech API** 를 사용 설정합니다.
+2. 사용자 인증 정보 → **API 키** 를 만들고 반드시 제한을 겁니다.
+   - 애플리케이션 제한: **HTTP 리퍼러** → `https://<계정>.github.io/*` (배포 주소)
+   - API 제한: **Cloud Text-to-Speech API** 만
+   - 할당량(Quotas)에서 일일 문자 수 한도 설정 (예: 500,000자/일)
+3. 키를 넣는 방법 두 가지:
+   - **이 브라우저에서만**: 영상 패널의 「⚙」 → Google Cloud TTS API 키 → 저장. (localStorage 에만 저장되어 환자 휴대폰에는 적용되지 않음)
+   - **배포 빌드에 포함(환자 휴대폰까지 적용)**: 저장소 Settings → Secrets and variables → Actions → New repository secret → 이름 `GOOGLE_TTS_KEY`. 다음 배포부터 적용됩니다. 목소리를 바꾸려면 Variables 에 `GOOGLE_TTS_VOICE`(예: `ko-KR-Chirp3-HD-Kore`).
+
+키는 빌드된 JS 에 그대로 들어가므로 위의 리퍼러·API 제한과 한도는 필수입니다. 키를 노출하고 싶지 않으면 아래 서버 방식(`GOOGLE_TTS_API_KEY`)을 쓰세요.
+
+## 선택 기능: 서버 — MP4 다운로드 + 완성 영상 링크
+
+MP4 파일이 필요하거나(다운로드, 병원 시스템 보관), 환자 휴대폰에서 아무 처리 없이 바로 재생되는 **완성 영상 링크**를 원하면 서버를 띄웁니다. 서버는 Remotion 으로 MP4 를 렌더링하고, `#m=<id>` 링크로 그 파일을 서빙합니다.
 
 ```bash
-cp .env.example .env      # OPENAI_API_KEY 등 입력
+cp .env.example .env      # GOOGLE_TTS_API_KEY 등 입력
 npm run build
 npm run server            # http://localhost:3123  (dist/ 도 함께 서빙)
 ```
 
-- 화면에 「🔊 고품질 음성으로 듣기」와 「⬇ MP4 저장」 버튼이 나타납니다.
-- TTS 공급자: `openai`(기본, API 키 필요) 또는 `edge`(무료·비공식, `npm i msedge-tts` 후 `TTS_PROVIDER=edge`).
-- MP4 렌더링에는 Chrome 이 필요합니다. 없으면 Remotion 이 자동으로 내려받습니다. 리눅스 서버에서는 한글 폰트(예: `fonts-noto-cjk`)를 설치해 주세요.
+- 화면에 「⬇ MP4 만들기」 버튼이 나타납니다. 누르면 음성 합성 → 렌더링 → 「환자용 MP4 링크」와 「MP4 파일 다운로드」가 나옵니다.
+- 음성은 서버의 TTS(`TTS_PROVIDER=google|openai|edge`)를 쓰고, 서버에 키가 없으면 브라우저에서 만든 Google 음성을 올려서 씁니다.
+- GitHub Pages 화면에서 별도 서버를 쓰려면 「⚙」 → 서버 주소에 입력하거나 Actions Variables 에 `SERVER_URL` 을 넣습니다. 서버 `.env` 의 `PUBLIC_URL` 은 환자용 MP4 링크의 주소가 됩니다.
+- 컨테이너로 올리려면 `Dockerfile` 을 쓰세요 (Cloud Run, Fly.io, Render 등 · 메모리 2GB 이상 권장). 렌더링 결과는 `server/output/` 에 남으므로 볼륨을 붙여 주세요.
 - 개발 중에는 `npm run dev` 와 `npm run server` 를 동시에 띄우면 vite 가 `/api`, `/media` 를 서버로 프록시합니다.
 
 ### 명령줄에서 렌더링
@@ -81,18 +102,20 @@ src/
   psg/extract.ts        PDF → 텍스트 → 수치 (기존 psgviewer.html 로직 그대로)
   psg/metrics.ts        지표 정의·구간 색상 (대시보드·영상 공통)
   psg/script.ts         수치 → 장면별 나레이션 대본, 장면 길이 계산
+  psg/share.ts          환자용 링크(#v=수치 / #m=MP4 id) 인코딩·디코딩
   remotion/             Remotion 컴포지션 (PsgExplainer) 과 9개 장면
   components/           업로드 UI, 대시보드, 영상 패널
   tts/useNarration.ts   Remotion Player ↔ 브라우저 TTS 동기화
+  tts/cloud.ts          고품질 음성: Google TTS 직접 호출 / 서버 TTS
   tts/api.ts            서버 TTS / MP4 렌더 API 클라이언트
-server/                 (선택) TTS·렌더 서버
+server/                 (선택) TTS·렌더 서버 (Dockerfile 로 배포 가능)
 scripts/render.mjs      (선택) CLI 렌더링
 legacy/psgviewer.html   업그레이드 전 단일 HTML 버전
 ```
 
 ### 음성 동기화 방식
 
-브라우저 음성은 길이를 미리 알 수 없어서, 글자 수로 장면 길이를 추정한 뒤 **장면 끝에서 발화가 끝날 때까지 기다렸다가** 다음 장면으로 넘어갑니다. 서버 TTS 를 쓰면 실제 오디오 길이로 장면 길이를 확정하므로 정확히 맞습니다.
+브라우저 음성은 길이를 미리 알 수 없어서, 글자 수로 장면 길이를 추정한 뒤 **장면 끝에서 발화가 끝날 때까지 기다렸다가** 다음 장면으로 넘어갑니다. 고품질 음성(Google/서버 TTS)을 쓰면 실제 오디오 길이로 장면 길이를 확정하므로 정확히 맞습니다.
 
 ### 기준값 참고
 

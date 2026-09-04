@@ -16,6 +16,7 @@
   "dependencies": {
     "@remotion/player": "4.0.520",
     "pdfjs-dist": "6.3.289",
+    "qrcode": "^1.5.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "remotion": "4.0.520"
@@ -25,6 +26,7 @@
     "@remotion/cli": "4.0.520",
     "@remotion/renderer": "4.0.520",
     "@types/express": "5.0.6",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",

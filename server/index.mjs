@@ -5,9 +5,12 @@
  *   (개발 중에는 vite 가 /api, /media 를 이 서버로 프록시한다. 배포 시에는 dist/ 를 이 서버가 함께 서빙한다.)
  *
  * 환경변수 (.env 또는 셸):
- *   TTS_PROVIDER = openai | edge | none   (기본: OPENAI_API_KEY 가 있으면 openai, 없으면 none)
+ *   TTS_PROVIDER = google | openai | edge | none   (기본: 키가 있는 공급자 순서대로 google → openai, 없으면 none)
+ *   GOOGLE_TTS_API_KEY, GOOGLE_TTS_VOICE(기본 ko-KR-Chirp3-HD-Aoede)
  *   OPENAI_API_KEY, OPENAI_TTS_MODEL(기본 gpt-4o-mini-tts), OPENAI_TTS_VOICE(기본 nova)
  *   EDGE_TTS_VOICE (기본 ko-KR-SunHiNeural, `npm i msedge-tts` 필요)
+ *   PUBLIC_URL  이 서버의 외부 주소 (환자용 MP4 링크에 쓰임, 예: https://psg.example.com)
+ *   CORS_ORIGIN 다른 주소(예: GitHub Pages)에서 이 API 를 부를 때 허용할 origin (기본 * = 모두 허용)
  *   PORT (기본 3123)
  */
 import express from 'express';
@@ -29,10 +32,22 @@ loadDotEnv(path.join(ROOT, '.env'));
 
 const PORT = Number(process.env.PORT || 3123);
 const app = express();
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '50mb' }));
+
+// 정적 사이트(GitHub Pages 등)가 다른 주소에서 이 API 를 부를 수 있게 CORS 허용
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', CORS_ORIGIN);
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
+const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, ttsProvider: providerName(), canRender: true });
+  res.json({ ok: true, ttsProvider: providerName(), canRender: true, publicUrl: PUBLIC_URL || undefined });
 });
 
 /** 장면별 텍스트 → 오디오 파일. 같은 텍스트는 캐시된다. */
@@ -59,7 +74,23 @@ app.post('/api/tts', async (req, res) => {
   }
 });
 
-/** MP4 렌더링 (비동기 작업) */
+/** 브라우저에서 합성한 오디오(base64 MP3)를 받아 저장 — 서버에 TTS 키가 없어도 MP4 에 음성을 넣을 수 있다 */
+app.post('/api/tts/upload', (req, res) => {
+  const items = req.body?.items;
+  if (!Array.isArray(items)) return res.status(400).send('items 배열이 필요합니다');
+  const out = [];
+  for (const it of items) {
+    const buf = Buffer.from(String(it.base64 ?? ''), 'base64');
+    if (!buf.length || buf.length > 8 * 1024 * 1024) return res.status(400).send('오디오 크기가 올바르지 않습니다');
+    const hash = createHash('sha1').update(buf).digest('hex').slice(0, 20);
+    const file = path.join(TTS_DIR, `${hash}.mp3`);
+    if (!existsSync(file)) writeFileSync(file, buf);
+    out.push({ id: it.id, url: `/media/tts/${hash}.mp3` });
+  }
+  res.json({ items: out });
+});
+
+/** MP4 렌더링 (비동기 작업). 완성되면 같은 이름의 .json 에 수치를 남겨 환자용 링크(#m=id)에서 대시보드를 그린다 */
 const jobs = new Map();
 app.post('/api/render', async (req, res) => {
   const props = req.body;
@@ -80,6 +111,7 @@ app.post('/api/render', async (req, res) => {
     job.status = 'rendering';
     const outFile = path.join(MP4_DIR, `psg-${id}.mp4`);
     await renderVideo({ ...props, scenes }, outFile, (p) => (job.progress = p));
+    writeFileSync(path.join(MP4_DIR, `psg-${id}.json`), JSON.stringify({ values: props.values, scenes: props.scenes.map(({ audioSrc: _a, ...s }) => s), showCaptions: !!props.showCaptions }));
     job.status = 'done';
     job.progress = 1;
     job.url = `/media/mp4/psg-${id}.mp4`;
@@ -95,7 +127,7 @@ app.get('/api/render/:id', (req, res) => {
   res.json(job);
 });
 
-app.use('/media', express.static(OUT));
+app.use('/media', express.static(OUT, { maxAge: '7d' }));
 
 // 빌드된 정적 사이트가 있으면 함께 서빙 (npm run build 후)
 const DIST = path.join(ROOT, 'dist');

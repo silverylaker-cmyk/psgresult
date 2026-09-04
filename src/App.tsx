@@ -1,11 +1,46 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { extractFromPdf } from './psg/extract';
 import { SAMPLE_VALUES } from './psg/script';
+import { parseShareHash, type ShareTarget } from './psg/share';
 import type { PsgValues } from './psg/types';
 import { Dashboard } from './components/Dashboard';
 import { VideoPanel } from './components/VideoPanel';
+import { SharedVideoView } from './components/SharedVideoView';
 
 export const App: React.FC = () => {
+  const [share, setShare] = useState<ShareTarget | null>(() => parseShareHash());
+  useEffect(() => {
+    const onHash = () => setShare(parseShareHash());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+
+  // 환자용 링크로 열렸으면 업로드 화면 없이 영상만 보여준다
+  if (share) return <PatientView share={share} />;
+  return <DoctorView />;
+};
+
+const PatientView: React.FC<{ share: ShareTarget }> = ({ share }) => (
+  <div className="patient">
+    <div className="header">
+      <h1>수면다원검사 결과 안내</h1>
+      <p>진료 전에 먼저 보세요 · 소리를 켜고 ▶ 를 눌러 주세요</p>
+    </div>
+    {share.mp4Id ? (
+      <SharedVideoView id={share.mp4Id} server={share.server} />
+    ) : share.values ? (
+      <>
+        <VideoPanel values={share.values} patient />
+        <Dashboard values={share.values} />
+      </>
+    ) : null}
+    <div className="hint" style={{ textAlign: 'center', marginTop: 16 }}>
+      이 안내는 검사 결과를 이해하기 쉽게 설명한 것으로, 진단과 치료는 진료실에서 담당 의사와 상의해 주세요.
+    </div>
+  </div>
+);
+
+const DoctorView: React.FC = () => {
   const [values, setValues] = useState<PsgValues | null>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);

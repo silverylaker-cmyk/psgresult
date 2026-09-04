@@ -29,6 +29,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          # Google TTS 키 (선택): 저장소 Settings → Secrets and variables → Actions → New repository secret → GOOGLE_TTS_KEY
+          VITE_GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
+          VITE_GOOGLE_TTS_VOICE: ${{ vars.GOOGLE_TTS_VOICE }}
+          # MP4 서버 주소 (선택): Settings → Secrets and variables → Actions → Variables → SERVER_URL
+          VITE_SERVER_URL: ${{ vars.SERVER_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
