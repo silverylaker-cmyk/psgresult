@@ -263,9 +263,11 @@ export const SegmentScale: React.FC<{
 
 /* ───────── 장면 레이아웃: 왼쪽 글, 오른쪽 일러스트 ───────── */
 /** 일러스트 크기(정사각형 한 변)와 오른쪽 여백. 1080 높이보다 커서 위아래가 살짝 잘리지만 마스크로 자연스럽게 사라진다 */
-export const ART_W = 1280;
+export const ART_W = 1152;
 /** 격자(여러 장) 일러스트는 글과 겹치지 않는 폭으로 */
-export const ART_GRID_W = 800;
+export const ART_GRID_W = 720;
+/** 자세 장면: 침대 부분만 세로로 잘라 보여 주므로 더 넓게 */
+export const ART_POSITION_W = 840;
 const ART_RIGHT = 40;
 /** 글과 겹치는 왼쪽 절반과 위아래 13% 를 투명하게 (한 장짜리) */
 const ART_MASK_FULL = 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 25%, #000 50%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 13%, #000 87%, rgba(0,0,0,0) 100%)';

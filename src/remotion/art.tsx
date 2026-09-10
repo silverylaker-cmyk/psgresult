@@ -111,7 +111,7 @@ export interface ArtGridItem {
 }
 
 /** 여러 장을 격자로. 나레이션에 맞춰 하나씩 켜지거나 강조된다. 없으면 fallback */
-export const ArtGrid: React.FC<{ items: ArtGridItem[]; columns?: number; fallback: React.ReactNode; gap?: number }> = ({ items, columns = 2, fallback, gap = 22 }) => {
+export const ArtGrid: React.FC<{ items: ArtGridItem[]; columns?: number; fallback: React.ReactNode; gap?: number; /** 칸의 가로/세로 비율 (1 = 정사각형, 작으면 세로로 길게 잘라 보여 줌) */ cellAspect?: number }> = ({ items, columns = 2, fallback, gap = 22, cellAspect = 1 }) => {
   const ok = useArtsAvailable(items.map((i) => i.name));
   if (ok === null) return <div style={{ width: '100%', aspectRatio: '1 / 1' }} />;
   if (!ok) return <div style={{ width: '100%', aspectRatio: '1 / 1' }}>{fallback}</div>;
@@ -135,14 +135,14 @@ export const ArtGrid: React.FC<{ items: ArtGridItem[]; columns?: number; fallbac
           <div
             style={{
               width: '100%',
-              aspectRatio: '1 / 1',
+              aspectRatio: `${cellAspect} / 1`,
               borderRadius: 32,
               background: it.active ? T.paper : 'transparent',
               boxShadow: it.active ? `0 0 0 5px ${T.accent}` : 'none',
               overflow: 'hidden',
             }}
           >
-            <Img src={artSrc(it.name)} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+            <Img src={artSrc(it.name)} style={{ width: '100%', height: '100%', objectFit: cellAspect === 1 ? 'contain' : 'cover', display: 'block' }} />
           </div>
           {it.label && <div style={{ fontFamily: T.sans, fontSize: 24, fontWeight: 700, color: it.active ? T.accent : T.ink2 }}>{it.label}</div>}
         </div>

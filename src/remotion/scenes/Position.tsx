@@ -3,7 +3,7 @@ import { interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion';
 import { RMI_MAX, getSeverity, metricById, rmiColor, rmiLabel } from '../../psg/metrics';
 import { isPositional, positionalRatio } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
-import { AnimatedNumber, Body, Eyebrow, Headline, NA, Rise, SceneFrame, T, clamp, sev, ART_GRID_W } from '../ui';
+import { AnimatedNumber, Body, Eyebrow, Headline, NA, Rise, SceneFrame, T, clamp, sev, ART_POSITION_W } from '../ui';
 import { PositionArt } from '../illustrations';
 import { ART_FILES, ArtGrid } from '../art';
 import { sentenceStartFrame } from '../timing';
@@ -29,9 +29,10 @@ export const PositionScene: React.FC<SceneProps & { values: PsgValues }> = ({ in
   const highlight = (noteOp > 0 && positional ? 'supine' : 'none') as 'supine' | 'side' | 'none';
 
   return (
-    <SceneFrame index={index} total={total} artWidth={ART_GRID_W} art={
+    <SceneFrame index={index} total={total} artWidth={ART_POSITION_W} art={
         <ArtGrid
           columns={2}
+          cellAspect={0.56}
           fallback={<PositionArt highlight={highlight} />}
           items={[
             { name: ART_FILES.positionSupine, label: '바로 누울 때', on: highlight !== 'side', active: highlight === 'supine' },
