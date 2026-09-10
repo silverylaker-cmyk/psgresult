@@ -132,10 +132,32 @@ export const VideoPanel: React.FC<{ values: PsgValues; patient?: boolean }> = ({
     }
   }, [cloud, cloudScenes, server, showCaptions, values]);
 
+  const valuesShareUrl = useMemo(() => buildShareUrl({ values }), [values]);
+
+  // 환자용 링크: 플레이어만 (훅은 모두 위에서 호출됨)
+  if (patient) {
+    return (
+      <div className="player-wrap patient-player">
+        <Player
+          ref={playerRef}
+          component={PsgExplainer}
+          inputProps={inputProps}
+          durationInFrames={duration}
+          compositionWidth={VIDEO.width}
+          compositionHeight={VIDEO.height}
+          fps={VIDEO.fps}
+          controls
+          clickToPlay
+          showVolumeControls={mode === 'cloud'}
+          style={{ width: '100%', height: '100%' }}
+        />
+      </div>
+    );
+  }
+
   const minutes = Math.floor(duration / VIDEO.fps / 60);
   const seconds = Math.round((duration / VIDEO.fps) % 60);
   const modeLabel = mode === 'off' ? '없음(자막만)' : mode === 'cloud' ? '고품질 음성' : '브라우저 음성';
-  const valuesShareUrl = useMemo(() => buildShareUrl({ values }), [values]);
 
   return (
     <div className="video-panel">
