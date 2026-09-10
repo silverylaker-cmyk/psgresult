@@ -5,6 +5,7 @@ import { nightlyEvents } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
 import { AnimatedNumber, BigNumber, Body, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, T, sev } from '../ui';
 import { StagesArt } from '../illustrations';
+import { ART_FILES, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -24,7 +25,7 @@ export const QualityScene: React.FC<SceneProps & { values: PsgValues }> = ({ ind
   const rdiTotal = nightlyEvents(values.rdi, values.tst);
 
   return (
-    <SceneFrame index={index} total={total} art={<StagesArt n3={n3} rem={rem} n3color={n3c} remcolor={remc} />} split={0.58}>
+    <SceneFrame index={index} total={total} art={<ArtImage name={ART_FILES.quality} fallback={<StagesArt n3={n3} rem={rem} n3color={n3c} remcolor={remc} />} />} split={0.58}>
       <Rise at={0}>
         <Eyebrow>잠의 질</Eyebrow>
         <Headline style={{ marginTop: 14 }}>얼마나 깊이 잤나.</Headline>

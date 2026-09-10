@@ -4,7 +4,8 @@ import { C } from '../../psg/metrics';
 import { SEV_WORD, ahiSeverity, hoursText, nightlyEvents } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
 import { BigNumber, Body, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, SegmentScale, T, clamp, sev } from '../ui';
-import { BreathArt } from '../illustrations';
+import { BreathArt, BreathWave } from '../illustrations';
+import { ART_FILES, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -33,7 +34,13 @@ export const AhiScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, 
   const nightly = nightlyEvents(ahi, values.tst);
 
   return (
-    <SceneFrame index={index} total={total} art={<BreathArt gaps={GAPS[s]} color={color} progress={waveP} />} split={0.58}>
+    <SceneFrame index={index} total={total} art={
+        <ArtImage name={ART_FILES.ahi} fallback={<BreathArt gaps={GAPS[s]} color={color} progress={waveP} />}>
+          <svg viewBox="0 0 640 160" style={{ position: 'absolute', left: 0, right: 0, bottom: -10, width: '100%' }}>
+            <BreathWave gaps={GAPS[s]} color={color} progress={waveP} y0={80} amp={40} />
+          </svg>
+        </ArtImage>
+      } split={0.58}>
       <Rise at={0}>
         <Eyebrow>가장 중요한 숫자</Eyebrow>
         <Headline style={{ marginTop: 14 }}>한 시간에 숨이<br />몇 번 멈췄나.</Headline>

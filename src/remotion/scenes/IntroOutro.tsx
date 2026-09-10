@@ -3,6 +3,7 @@ import { useCurrentFrame, useVideoConfig } from 'remotion';
 import type { PsgValues } from '../../psg/types';
 import { Body, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
 import { IntroArt, OutroArt } from '../illustrations';
+import { ART_FILES, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
 
 export interface SceneProps {
@@ -19,7 +20,7 @@ export const IntroScene: React.FC<SceneProps> = ({ index, total, narration }) =>
   const l3 = sentenceStartFrame(narration, '충분합니다', durationInFrames, fps) ?? 120;
 
   return (
-    <SceneFrame index={index} total={total} art={<IntroArt />} split={0.52}>
+    <SceneFrame index={index} total={total} art={<ArtImage name={ART_FILES.intro} fallback={<IntroArt />} />} split={0.52}>
       <Rise at={0}>
         <Eyebrow>진료 전에 먼저 보세요</Eyebrow>
       </Rise>
@@ -65,7 +66,17 @@ export const OutroScene: React.FC<SceneProps & { values: PsgValues }> = ({ index
   const checked = items.filter((it) => frame >= it.at + 10).length;
 
   return (
-    <SceneFrame index={index} total={total} art={<OutroArt checked={checked} />} split={0.58}>
+    <SceneFrame index={index} total={total} art={
+        <ArtImage name={ART_FILES.outro} fallback={<OutroArt checked={checked} />}>
+          <div style={{ position: 'absolute', left: '50%', bottom: 8, transform: 'translateX(-50%)', display: 'flex', gap: 14, background: T.paper, borderRadius: 999, padding: '10px 18px', boxShadow: '0 2px 10px rgba(0,0,0,.08)' }}>
+            {[0, 1, 2].map((i) => (
+              <div key={i} style={{ width: 34, height: 34, borderRadius: 10, background: i < checked ? T.accent : 'transparent', border: `3px solid ${i < checked ? T.accent : T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.paper, fontSize: 22, fontWeight: 900 }}>
+                {i < checked ? '✓' : ''}
+              </div>
+            ))}
+          </div>
+        </ArtImage>
+      } split={0.58}>
       <Rise at={0}>
         <Eyebrow>진료실에서</Eyebrow>
         <Headline size={80} style={{ marginTop: 16 }}>

@@ -87,13 +87,20 @@ export const OverviewArt: React.FC<{ step: number }> = ({ step }) => {
 };
 
 /* 3. AHI — 숨의 파형. gaps 만큼 평평한 구간(멈춤)이 생긴다 */
-export const BreathArt: React.FC<{ gaps: number; color: string; progress: number }> = ({ gaps, color, progress }) => {
-  // 640 폭에 물결 + 멈춤 구간
+export const BreathArt: React.FC<{ gaps: number; color: string; progress: number }> = ({ gaps, color, progress }) => (
+  <svg viewBox="0 0 640 640" width="100%">
+    <Blob color={T.accentSoft} />
+    {/* 코와 입 옆모습 */}
+    <path d="M470 120c30 30 40 70 20 100l-30 10 30 20c-10 30-40 40-70 30" {...S} />
+    <BreathWave gaps={gaps} color={color} progress={progress} y0={330} amp={70} label />
+  </svg>
+);
+
+/** 숨 파형만 (이미지 위 오버레이용). gaps 만큼 평평한 구간(멈춤)이 생긴다 */
+export const BreathWave: React.FC<{ gaps: number; color: string; progress: number; y0?: number; amp?: number; label?: boolean }> = ({ gaps, color, progress, y0 = 80, amp = 40, label = false }) => {
   const cycles = 10;
   const w = 560;
   const x0 = 40;
-  const y0 = 330;
-  const amp = 70;
   const gapSet = new Set<number>();
   const positions = [3, 6, 8, 5, 2];
   for (let i = 0; i < Math.min(gaps, positions.length); i++) gapSet.add(positions[i]);
@@ -106,18 +113,17 @@ export const BreathArt: React.FC<{ gaps: number; color: string; progress: number
   }
   const len = 1400;
   return (
-    <svg viewBox="0 0 640 640" width="100%">
-      <Blob color={T.accentSoft} />
-      {/* 코와 입 옆모습 */}
-      <path d="M470 120c30 30 40 70 20 100l-30 10 30 20c-10 30-40 40-70 30" {...S} />
+    <>
       <path d={d} stroke={T.ink} strokeWidth={8} fill="none" strokeLinecap="round" strokeDasharray={len} strokeDashoffset={len * (1 - progress)} />
       {Array.from(gapSet).map((c) => (
         <rect key={c} x={x0 + c * seg} y={y0 - 12} width={seg} height={24} rx={12} fill={color} opacity={progress > (c + 1) / cycles ? 1 : 0} />
       ))}
-      <text x={320} y={470} textAnchor="middle" fontFamily={T.sans} fontSize={24} fontWeight={700} fill={T.ink2}>
-        {gaps === 0 ? '고른 숨' : '숨이 멈춘 구간'}
-      </text>
-    </svg>
+      {label && (
+        <text x={320} y={y0 + 140} textAnchor="middle" fontFamily={T.sans} fontSize={24} fontWeight={700} fill={T.ink2}>
+          {gaps === 0 ? '고른 숨' : '숨이 멈춘 구간'}
+        </text>
+      )}
+    </>
   );
 };
 
@@ -273,20 +279,12 @@ export const OptionsArt: React.FC<{ active: Set<number> }> = ({ active }) => {
           <path d="M30 20l40 0M56 6l14 14-14 14" {...thin} />
         </>
       ))}
-      {cell(3, 200, 440, T.sandSoft, (
+      {cell(3, 320, 440, T.sandSoft, (
         <>
           {/* 베개 위 옆으로 누운 사람 */}
           <rect x="-80" y="20" width="160" height="40" rx="18" fill={T.paper} stroke={T.ink} strokeWidth={6} />
           <circle cx="-40" cy="-6" r="24" fill={T.paper} stroke={T.ink} strokeWidth={6} />
           <path d="M-14 10c30-30 80-30 90 10" {...S} />
-        </>
-      ))}
-      {cell(4, 440, 440, T.accentSoft, (
-        <>
-          {/* 마우스피스 */}
-          <path d="M-70-10c0-30 30-40 70-40s70 10 70 40c0 30-30 50-70 50s-70-20-70-50z" {...S} />
-          <path d="M-70-10c30 12 110 12 140 0" {...thin} />
-          <path d="M-36-30v22M0-34v26M36-30v22" {...thin} />
         </>
       ))}
     </svg>

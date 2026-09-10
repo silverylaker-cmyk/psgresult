@@ -4,6 +4,7 @@ import type { PsgValues } from '../../psg/types';
 import { hoursText } from '../../psg/script';
 import { Body, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
 import { OverviewArt } from '../illustrations';
+import { ART_FILES, ArtGrid } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -22,7 +23,13 @@ export const OverviewScene: React.FC<SceneProps & { values: PsgValues }> = ({ in
   const step = Math.floor((frame - listAt) / 14);
 
   return (
-    <SceneFrame index={index} total={total} art={<OverviewArt step={step} />}>
+    <SceneFrame index={index} total={total} art={
+        <ArtGrid
+          columns={2}
+          fallback={<OverviewArt step={step} />}
+          items={[ART_FILES.overviewBreath, ART_FILES.overviewOxygen, ART_FILES.overviewPosition, ART_FILES.overviewSleep].map((name, i) => ({ name, on: i <= step, label: ITEMS[i].label }))}
+        />
+      }>
       <Rise at={0}>
         <Eyebrow>검사실에서는</Eyebrow>
         <Headline style={{ marginTop: 14 }}>밤새 네 가지를<br />지켜봤습니다.</Headline>

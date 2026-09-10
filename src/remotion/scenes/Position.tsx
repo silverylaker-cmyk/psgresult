@@ -5,6 +5,7 @@ import { isPositional, positionalRatio } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
 import { AnimatedNumber, Body, Eyebrow, Headline, NA, Rise, SceneFrame, T, clamp, sev } from '../ui';
 import { PositionArt } from '../illustrations';
+import { ART_FILES, ArtGrid } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -25,10 +26,19 @@ export const PositionScene: React.FC<SceneProps & { values: PsgValues }> = ({ in
   const snoreZone = getSeverity(metricById('snorepct')!, values.snorepct);
   const noteOp = noteAt == null ? 0 : interpolate(frame, [noteAt, noteAt + 15], [0, 1], clamp);
   const allNull = rows.every((r) => r.v == null);
-  const highlight: 'supine' | 'side' | 'none' = noteOp > 0 && positional ? 'supine' : 'none';
+  const highlight = (noteOp > 0 && positional ? 'supine' : 'none') as 'supine' | 'side' | 'none';
 
   return (
-    <SceneFrame index={index} total={total} art={<PositionArt highlight={highlight} />} split={0.56}>
+    <SceneFrame index={index} total={total} art={
+        <ArtGrid
+          columns={2}
+          fallback={<PositionArt highlight={highlight} />}
+          items={[
+            { name: ART_FILES.positionSupine, label: '바로 누울 때', on: highlight !== 'side', active: highlight === 'supine' },
+            { name: ART_FILES.positionSide, label: '옆으로 잘 때', on: highlight !== 'supine', active: highlight === 'side' },
+          ]}
+        />
+      } split={0.56}>
       <Rise at={0}>
         <Eyebrow>자세 이야기</Eyebrow>
         <Headline style={{ marginTop: 14 }}>어떤 자세에서<br />더 힘들었나.</Headline>

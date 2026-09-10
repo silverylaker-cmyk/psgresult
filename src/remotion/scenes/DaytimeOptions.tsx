@@ -4,6 +4,7 @@ import { SEV_WORD, ahiSeverity, isPositional } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
 import { Body, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
 import { DaytimeArt, OptionsArt } from '../illustrations';
+import { ART_FILES, ArtGrid, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -22,7 +23,7 @@ export const DaytimeScene: React.FC<SceneProps & { values: PsgValues }> = ({ ind
   const current = ats.reduce((cur, a, i) => (frame >= a ? i : cur), -1);
 
   return (
-    <SceneFrame index={index} total={total} art={<DaytimeArt />} split={0.58}>
+    <SceneFrame index={index} total={total} art={<ArtImage name={ART_FILES.daytime} fallback={<DaytimeArt />} />} split={0.58}>
       <Rise at={0}>
         <Eyebrow>{normal ? '참고로, 수면무호흡이 있으면' : '그래서'}</Eyebrow>
         <Headline style={{ marginTop: 14 }}>낮이 힘든 겁니다.</Headline>
@@ -45,7 +46,6 @@ const OPTIONS = [
   { n: 1, title: '양압기', desc: '코로 부드럽게 바람을 넣어 숨길이 닫히지 않게. 중간 이상에서 가장 확실한 방법.', needle: '첫째' },
   { n: 2, title: '수술', desc: '코나 목에서 실제로 막힌 곳을 찾아 넓힘. 구조적 원인이 뚜렷할 때.', needle: '둘째' },
   { n: 3, title: '자세 · 체중', desc: '옆으로 자기, 체중 감량, 술 줄이기. 가벼운 경우엔 효과가 큼.', needle: '셋째' },
-  { n: 4, title: '구강 장치', desc: '아래턱을 살짝 앞으로 당겨 숨길을 열어 주는 마우스피스.', needle: '넷째' },
 ];
 
 export const OptionsScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, total, narration, values }) => {
@@ -63,26 +63,39 @@ export const OptionsScene: React.FC<SceneProps & { values: PsgValues }> = ({ ind
   const hl = highlightAt != null && frame >= highlightAt;
   if (hl) {
     if (s === 'moderate' || s === 'severe') highlighted.add(1);
-    if (s === 'mild' || s === 'normal') {
-      highlighted.add(3);
-      if (s === 'mild') highlighted.add(4);
-    }
+    if (s === 'mild' || s === 'normal') highlighted.add(3);
   }
   if (posAt != null && frame >= posAt && positional) highlighted.add(3);
   const anyHl = highlighted.size > 0;
   const artActive = anyHl ? highlighted : speaking >= 0 ? new Set([speaking + 1]) : new Set<number>();
+  const oralAt = sentenceStartFrame(narration, '구강 장치', durationInFrames, fps);
 
   const note =
     s === 'moderate' || s === 'severe'
       ? `${SEV_WORD[s]}라면 보통 양압기부터 이야기를 시작합니다.`
       : s === 'mild'
-        ? '가벼운 단계라면 자세·체중, 구강 장치부터 이야기를 시작합니다.'
+        ? '가벼운 단계라면 자세·체중부터 이야기를 시작합니다.'
         : s === 'normal'
           ? '당장 치료가 필요한 단계는 아닐 수 있습니다. 증상이 있다면 생활 습관부터.'
           : '';
 
   return (
-    <SceneFrame index={index} total={total} art={<OptionsArt active={artActive} />} split={0.56}>
+    <SceneFrame
+      index={index}
+      total={total}
+      split={0.56}
+      art={
+        <ArtGrid
+          columns={2}
+          fallback={<OptionsArt active={artActive} />}
+          items={[
+            { name: ART_FILES.optionCpap, label: '양압기' },
+            { name: ART_FILES.optionSurgery, label: '수술' },
+            { name: ART_FILES.optionLifestyle, label: '자세 · 체중' },
+          ].map((it, i) => ({ ...it, on: artActive.size === 0 || artActive.has(i + 1), active: artActive.has(i + 1) }))}
+        />
+      }
+    >
       <Rise at={0}>
         <Eyebrow>결정은 진료실에서 함께 · 후보를 미리 알고 오시면 대화가 쉽습니다</Eyebrow>
         <Headline style={{ marginTop: 14 }}>무엇을 할 수 있나.</Headline>
@@ -106,6 +119,11 @@ export const OptionsScene: React.FC<SceneProps & { values: PsgValues }> = ({ ind
           );
         })}
       </div>
+      {oralAt != null && frame >= oralAt && (
+        <Rise at={oralAt}>
+          <div style={{ fontSize: 21, color: T.ink3, marginTop: 18, lineHeight: 1.45 }}>※ 구강 장치(마우스피스)도 있으나 맞는 경우가 제한적이라 필요할 때만 안내합니다.</div>
+        </Rise>
+      )}
       {hl && note && (
         <Rise at={highlightAt!}>
           <Body size={27} strong style={{ marginTop: 26, color: T.accent }}>

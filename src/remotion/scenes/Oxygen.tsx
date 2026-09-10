@@ -4,6 +4,7 @@ import { C, getSeverity, metricById } from '../../psg/metrics';
 import type { PsgValues } from '../../psg/types';
 import { BigNumber, Body, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, SegmentScale, T, clamp, sev } from '../ui';
 import { OxygenArt } from '../illustrations';
+import { ART_FILES, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -32,7 +33,7 @@ export const OxygenScene: React.FC<SceneProps & { values: PsgValues }> = ({ inde
   const level = (shown - 70) / 30;
 
   return (
-    <SceneFrame index={index} total={total} art={<OxygenArt level={level} color={color} />} split={0.56}>
+    <SceneFrame index={index} total={total} art={<ArtImage name={ART_FILES.oxygen} fallback={<OxygenArt level={level} color={color} />} />} split={0.56}>
       <Rise at={0}>
         <Eyebrow>숨이 막히면</Eyebrow>
         <Headline size={72} style={{ marginTop: 12 }}>피 속 산소가 내려갑니다.</Headline>
