@@ -3,7 +3,7 @@ import { Img, continueRender, delayRender, staticFile } from 'remotion';
 import { T } from './ui';
 
 /**
- * 생성 이미지(public/art/*.png)를 장면 일러스트로 쓴다.
+ * 생성 이미지(public/art/*.jpg)를 장면 일러스트로 쓴다.
  * 파일이 없으면(아직 안 올렸거나 이름이 다르면) 기존 SVG 일러스트(fallback)를 그대로 쓴다.
  *
  * 경로:
@@ -17,7 +17,7 @@ declare global {
   }
 }
 
-/** 기대하는 파일 이름 (public/art/<name>.png) */
+/** 기대하는 파일 이름 (public/art/<name>.jpg) */
 export const ART_FILES = {
   intro: '01-intro',
   overviewBreath: '02-overview-breath',
@@ -37,7 +37,7 @@ export const ART_FILES = {
 } as const;
 
 export function artSrc(name: string): string {
-  const file = `art/${name}.png`;
+  const file = `art/${name}.jpg`;
   if (typeof window !== 'undefined' && window.__PSG_ART_BASE) return window.__PSG_ART_BASE + file;
   return staticFile(file);
 }
@@ -94,7 +94,7 @@ export const ArtImage: React.FC<{ name: string; fallback: React.ReactNode; dim?:
   if (ok === null) return <div style={{ width: '100%', aspectRatio: '1 / 1' }} />;
   if (!ok) return <>{fallback}</>;
   return (
-    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1' }}>
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', borderRadius: 36, overflow: 'hidden' }}>
       <Img src={artSrc(name)} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', opacity: dim ? 0.35 : 1 }} />
       {children}
     </div>
