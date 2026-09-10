@@ -27,7 +27,7 @@ const built = await esbuild.build({
 const tmp = path.resolve('node_modules/.cache/psg-script.mjs');
 mkdirSync(path.dirname(tmp), { recursive: true });
 writeFileSync(tmp, built.outputFiles[0].text);
-const { SAMPLE_VALUES, buildScenes, applyAudio } = await import(tmp);
+const { SAMPLE_VALUES, buildScenes, applyAudio, toSpoken } = await import(tmp);
 
 const values = valuesFile ? { ...SAMPLE_VALUES, ...JSON.parse(readFileSync(valuesFile, 'utf8')) } : SAMPLE_VALUES;
 const out = path.resolve(outArg || 'out/psg-sample.mp4');
@@ -40,9 +40,10 @@ if (useTts) {
   mkdirSync(dir, { recursive: true });
   const audio = [];
   for (const s of scenes) {
-    const hash = createHash('sha1').update(providerName() + '|' + s.narration).digest('hex').slice(0, 20);
+    const spoken = toSpoken(s.narration);
+    const hash = createHash('sha1').update(providerName() + '|' + spoken).digest('hex').slice(0, 20);
     const file = path.join(dir, `${hash}.mp3`);
-    if (!existsSync(file)) writeFileSync(file, await synthesize(s.narration));
+    if (!existsSync(file)) writeFileSync(file, await synthesize(spoken));
     const durationSec = mp3Duration(file);
     audio.push({ id: s.id, src: file, durationSec });
     console.log(`  🔊 ${s.id}: ${durationSec.toFixed(1)}s`);

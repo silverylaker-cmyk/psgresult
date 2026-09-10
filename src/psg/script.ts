@@ -16,6 +16,19 @@ export function estimateSpeechSeconds(text: string, rate = 1): number {
   return sec / rate;
 }
 
+/**
+ * 음성 합성에 넣기 전 읽는 법을 바꾼다. 자막·화면 글자는 그대로 두고 소리만 바꾼다.
+ *  - AHI → "에이 에이치 아이" (TTS 가 "어히"로 읽는 것 방지)
+ *  - SpO₂ → "산소포화도", RDI → "알 디 아이", REM → "렘"
+ */
+export function toSpoken(text: string): string {
+  return text
+    .replace(/AHI/g, '에이 에이치 아이')
+    .replace(/RDI/g, '알 디 아이')
+    .replace(/SpO[₂2]/g, '산소포화도')
+    .replace(/\bREM\b/g, '렘');
+}
+
 export function splitSentences(text: string): string[] {
   return text
     .split(/(?<=[.!?])\s+/)
@@ -125,7 +138,7 @@ function buildBodyDrafts(v: PsgValues): Draft[] {
   // 3. AHI
   {
     let n =
-      '가장 중요한 숫자부터 보겠습니다. AHI, 한 시간에 숨이 멈추거나 크게 얕아진 횟수입니다. ' +
+      '가장 중요한 숫자부터 보겠습니다. 무호흡 저호흡 지수, AHI. 한 시간에 숨이 멈추거나 크게 얕아진 횟수입니다. ' +
       '5번 미만이면 정상, 15번까지는 가벼운 편, 30번까지는 중간, 그 이상이면 심한 편으로 봅니다. ';
     if (v.ahi == null) {
       n += '이번 결과지에서는 AHI 값을 자동으로 읽지 못했습니다. 진료실에서 직접 확인해 드리겠습니다.';

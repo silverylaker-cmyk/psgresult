@@ -1,4 +1,5 @@
 import type { SceneId, SceneSpec } from '../psg/types';
+import { toSpoken } from '../psg/script';
 import { serverBase, synthesizeOnServer, type ServerInfo } from './api';
 
 /**
@@ -80,7 +81,7 @@ export async function synthesizeScenes(
   scenes: SceneSpec[],
   onProgress?: (done: number, total: number) => void,
 ): Promise<SceneAudio[]> {
-  const items = scenes.map((s) => ({ id: s.id, text: s.narration }));
+  const items = scenes.map((s) => ({ id: s.id, text: toSpoken(s.narration) }));
   let urls: Array<{ id: SceneId; url: string }>;
   if (source.kind === 'server') {
     urls = (await synthesizeOnServer(items)).map((it) => ({ id: it.id, url: serverBase() + it.url }));

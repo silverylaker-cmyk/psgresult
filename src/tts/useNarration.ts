@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { PlayerRef } from '@remotion/player';
-import { sceneIndexAt, sceneStartFrame, splitSentences } from '../psg/script';
+import { sceneIndexAt, sceneStartFrame, splitSentences, toSpoken } from '../psg/script';
 import type { SceneSpec } from '../psg/types';
 
 /** browser: Web Speech API · cloud: 합성된 오디오 파일(장면에 audioSrc) · off: 자막만 */
@@ -67,7 +67,7 @@ export function useNarration({ playerRef, scenes, mode, voice, rate }: Options) 
       const scene = scenes[idx];
       if (!scene) return;
       speechSynthesis.cancel();
-      const sentences = splitSentences(scene.narration);
+      const sentences = splitSentences(scene.narration).map(toSpoken);
       speaking.current = true;
       setSpeakingNow(true);
       let remaining = sentences.length;
