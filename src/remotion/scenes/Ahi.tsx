@@ -36,7 +36,7 @@ export const AhiScene: React.FC<SceneProps & { values: PsgValues }> = ({ index, 
   return (
     <SceneFrame index={index} total={total} art={
         <ArtImage name={ART_FILES.ahi} fallback={<BreathArt gaps={GAPS[s]} color={color} progress={waveP} />}>
-          <svg viewBox="0 0 640 160" style={{ position: 'absolute', left: 0, right: 0, top: 0, width: '100%' }}>
+          <svg viewBox="0 0 640 160" style={{ position: 'absolute', left: 0, right: 0, top: '11%', width: '100%' }}>
             <BreathWave gaps={GAPS[s]} color={color} progress={waveP} y0={80} amp={40} />
           </svg>
         </ArtImage>

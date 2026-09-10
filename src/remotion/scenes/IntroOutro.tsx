@@ -68,7 +68,7 @@ export const OutroScene: React.FC<SceneProps & { values: PsgValues }> = ({ index
   return (
     <SceneFrame index={index} total={total} art={
         <ArtImage name={ART_FILES.outro} fallback={<OutroArt checked={checked} />}>
-          <div style={{ position: 'absolute', left: '50%', bottom: 8, transform: 'translateX(-50%)', display: 'flex', gap: 14, background: T.paper, borderRadius: 999, padding: '10px 18px', boxShadow: '0 2px 10px rgba(0,0,0,.08)' }}>
+          <div style={{ position: 'absolute', left: '50%', bottom: '24%', transform: 'translateX(-50%)', display: 'flex', gap: 14, background: T.paper, borderRadius: 999, padding: '10px 18px', boxShadow: '0 2px 10px rgba(0,0,0,.08)' }}>
             {[0, 1, 2].map((i) => (
               <div key={i} style={{ width: 34, height: 34, borderRadius: 10, background: i < checked ? T.accent : 'transparent', border: `3px solid ${i < checked ? T.accent : T.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.paper, fontSize: 22, fontWeight: 900 }}>
                 {i < checked ? '✓' : ''}

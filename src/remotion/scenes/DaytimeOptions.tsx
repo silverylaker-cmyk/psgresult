@@ -2,7 +2,7 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { SEV_WORD, ahiSeverity, isPositional } from '../../psg/script';
 import type { PsgValues } from '../../psg/types';
-import { Body, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
+import { Body, Eyebrow, Headline, Rise, SceneFrame, T, ART_GRID_W } from '../ui';
 import { DaytimeArt, OptionsArt } from '../illustrations';
 import { ART_FILES, ArtGrid, ArtImage } from '../art';
 import { sentenceStartFrame } from '../timing';
@@ -84,6 +84,7 @@ export const OptionsScene: React.FC<SceneProps & { values: PsgValues }> = ({ ind
       index={index}
       total={total}
       split={0.56}
+      artWidth={ART_GRID_W}
       art={
         <ArtGrid
           columns={2}

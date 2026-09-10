@@ -262,15 +262,27 @@ export const SegmentScale: React.FC<{
 };
 
 /* ───────── 장면 레이아웃: 왼쪽 글, 오른쪽 일러스트 ───────── */
+/** 일러스트 크기(정사각형 한 변)와 오른쪽 여백. 1080 높이보다 커서 위아래가 살짝 잘리지만 마스크로 자연스럽게 사라진다 */
+export const ART_W = 1280;
+/** 격자(여러 장) 일러스트는 글과 겹치지 않는 폭으로 */
+export const ART_GRID_W = 800;
+const ART_RIGHT = 40;
+/** 글과 겹치는 왼쪽 절반과 위아래 13% 를 투명하게 (한 장짜리) */
+const ART_MASK_FULL = 'linear-gradient(to right, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 25%, #000 50%), linear-gradient(to bottom, rgba(0,0,0,0) 0%, #000 13%, #000 87%, rgba(0,0,0,0) 100%)';
+
 export const SceneFrame: React.FC<{
   index: number;
   total: number;
   art?: React.ReactNode;
   artAt?: number;
+  /** 일러스트 폭. 격자는 ART_GRID_W */
+  artWidth?: number;
   /** 글 영역 너비 비율 (0~1) */
   split?: number;
   children: React.ReactNode;
-}> = ({ index, total, art, artAt = 6, split = 0.56, children }) => {
+}> = ({ index, total, art, artAt = 6, artWidth = ART_W, split = 0.56, children }) => {
+  // 격자(작은 폭)는 글과 겹치지 않으므로 마스크 없이 그대로
+  const artMask = artWidth >= 1100 ? ART_MASK_FULL : undefined;
   const frame = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const inOp = interpolate(frame, [0, 14], [0, 1], clamp);
@@ -279,7 +291,7 @@ export const SceneFrame: React.FC<{
   return (
     <AbsoluteFill style={{ backgroundColor: T.bg, fontFamily: T.sans, color: T.ink, opacity: Math.min(inOp, outOp) }}>
       {/* 상단: 워드마크 + 페이지 점 */}
-      <div style={{ position: 'absolute', top: 44, left: T.margin, right: T.margin, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ position: 'absolute', top: 44, left: T.margin, right: T.margin, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 2 }}>
         <div style={{ fontFamily: T.serif, fontSize: 24, fontWeight: 700, color: T.ink2 }}>수면다원검사 결과 안내</div>
         <div style={{ display: 'flex', gap: 8 }}>
           {Array.from({ length: total }).map((_, i) => (
@@ -288,16 +300,31 @@ export const SceneFrame: React.FC<{
         </div>
       </div>
 
-      {/* 본문 */}
-      <div style={{ position: 'absolute', top: 120, bottom: 120, left: T.margin, right: T.margin, display: 'flex', alignItems: 'center', gap: 60 }}>
-        <div style={{ flex: `0 0 ${split * 100}%`, maxWidth: `${split * 100}%` }}>{children}</div>
-        {art && (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-            <Grow at={artAt} style={{ width: '100%', maxWidth: 640 }}>
-              {art}
-            </Grow>
-          </div>
-        )}
+      {/* 일러스트: 글 뒤에 크게 깔리고, 글과 겹치는 왼쪽·위·아래는 그라데이션으로 사라진다 */}
+      {art && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            right: ART_RIGHT,
+            width: artWidth,
+            transform: 'translateY(-50%)',
+            WebkitMaskImage: artMask,
+            maskImage: artMask,
+            WebkitMaskComposite: artMask ? 'source-in' : undefined,
+            maskComposite: artMask ? 'intersect' : undefined,
+            pointerEvents: 'none',
+          }}
+        >
+          <Grow at={artAt} style={{ width: '100%' }}>
+            {art}
+          </Grow>
+        </div>
+      )}
+
+      {/* 본문 (글) */}
+      <div style={{ position: 'absolute', top: 120, bottom: 120, left: T.margin, width: (1920 - T.margin * 2) * split, display: 'flex', alignItems: 'center', zIndex: 1 }}>
+        <div style={{ width: '100%' }}>{children}</div>
       </div>
     </AbsoluteFill>
   );

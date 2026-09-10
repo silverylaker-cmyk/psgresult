@@ -2,7 +2,7 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import type { PsgValues } from '../../psg/types';
 import { hoursText } from '../../psg/script';
-import { Body, Eyebrow, Headline, Rise, SceneFrame, T } from '../ui';
+import { Body, Eyebrow, Headline, Rise, SceneFrame, T, ART_GRID_W } from '../ui';
 import { OverviewArt } from '../illustrations';
 import { ART_FILES, ArtGrid } from '../art';
 import { sentenceStartFrame } from '../timing';
@@ -23,7 +23,7 @@ export const OverviewScene: React.FC<SceneProps & { values: PsgValues }> = ({ in
   const step = Math.floor((frame - listAt) / 14);
 
   return (
-    <SceneFrame index={index} total={total} art={
+    <SceneFrame index={index} total={total} artWidth={ART_GRID_W} art={
         <ArtGrid
           columns={2}
           fallback={<OverviewArt step={step} />}

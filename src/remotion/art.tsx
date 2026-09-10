@@ -114,10 +114,10 @@ export interface ArtGridItem {
 export const ArtGrid: React.FC<{ items: ArtGridItem[]; columns?: number; fallback: React.ReactNode; gap?: number }> = ({ items, columns = 2, fallback, gap = 22 }) => {
   const ok = useArtsAvailable(items.map((i) => i.name));
   if (ok === null) return <div style={{ width: '100%', aspectRatio: '1 / 1' }} />;
-  if (!ok) return <>{fallback}</>;
+  if (!ok) return <div style={{ width: '100%', aspectRatio: '1 / 1' }}>{fallback}</div>;
   const cellW = `calc(${100 / columns}% - ${(gap * (columns - 1)) / columns}px)`;
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignContent: 'center', gap, width: '100%', aspectRatio: '1 / 1' }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignContent: 'center', gap, width: '100%' }}>
       {items.map((it) => (
         <div
           key={it.name}
