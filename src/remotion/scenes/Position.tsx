@@ -95,13 +95,18 @@ export const PositionScene: React.FC<SceneProps & { values: PsgValues }> = ({ in
 
       {values.snorepct != null && (
         <Rise at={snoreAt ?? barsAt + 120}>
-          <Body size={26} style={{ marginTop: 16 }}>
+          <Body size={30} strong style={{ marginTop: 14 }}>
             코골이는 잠자는 시간의{' '}
-            <span style={{ fontSize: 40, fontWeight: 900, color: sev(snoreZone?.c), letterSpacing: -1 }}>
+            <span style={{ fontSize: 50, fontWeight: 900, color: sev(snoreZone?.c), letterSpacing: -1 }}>
               <AnimatedNumber value={values.snorepct} at={snoreAt ?? barsAt + 120} decimals={0} />%
             </span>{' '}
-            동안{snoreZone && snoreZone.l !== '정상' ? ' — 숨길이 좁아져 떨리는 소리입니다.' : '.'}
+            동안 이어졌습니다.
           </Body>
+          {snoreZone && snoreZone.l !== '정상' && (
+            <Body size={24} style={{ marginTop: 4 }}>
+              숨길이 좁아져 떨리는 소리입니다.
+            </Body>
+          )}
         </Rise>
       )}
     </SceneFrame>
