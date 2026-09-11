@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { detectInApp, openInExternalBrowser } from './inapp';
+import { getGoogleKey } from './tts/cloud';
 import { extractFromPdf } from './psg/extract';
 import { SAMPLE_VALUES } from './psg/script';
 import { parseShareHash, type ShareTarget } from './psg/share';
@@ -21,11 +23,35 @@ export const App: React.FC = () => {
 };
 
 /** 환자용 링크: 영상만 보여 준다 (제목·설정·대시보드 없음) */
-const PatientView: React.FC<{ share: ShareTarget }> = ({ share }) => (
-  <div className="patient">
-    {share.mp4Id ? <SharedVideoView id={share.mp4Id} server={share.server} /> : share.values ? <VideoPanel values={share.values} patient /> : null}
-  </div>
-);
+const PatientView: React.FC<{ share: ShareTarget }> = ({ share }) => {
+  const inapp = useMemo(() => detectInApp(), []);
+  // 카카오톡 안에서는 음성이 나오지 않으므로(내장 음성 없음) 바로 기본 브라우저로 넘긴다. 실패하면 안내 띠를 보여 준다.
+  const needsExternal = !share.mp4Id && (inapp.kakao || inapp.other) && !getGoogleKey();
+  const [showBanner, setShowBanner] = useState(false);
+  useEffect(() => {
+    if (!needsExternal) return;
+    if (inapp.kakao) openInExternalBrowser();
+    const t = setTimeout(() => setShowBanner(true), 1200);
+    return () => clearTimeout(t);
+  }, [needsExternal, inapp.kakao]);
+
+  return (
+    <div className="patient">
+      {showBanner && (
+        <div className="inapp-banner">
+          <div>
+            {inapp.kakao ? '카카오톡 안에서는 음성이 나오지 않습니다.' : '앱 안 브라우저에서는 음성이 나오지 않을 수 있습니다.'}{' '}
+            {inapp.ios ? '오른쪽 아래 메뉴에서 「Safari로 열기」를 눌러 주세요.' : '「다른 브라우저로 열기」를 눌러 주세요.'}
+          </div>
+          <button className="btn" onClick={() => openInExternalBrowser()}>
+            기본 브라우저로 열기
+          </button>
+        </div>
+      )}
+      {share.mp4Id ? <SharedVideoView id={share.mp4Id} server={share.server} /> : share.values ? <VideoPanel values={share.values} patient /> : null}
+    </div>
+  );
+};
 
 const DoctorView: React.FC = () => {
   const [values, setValues] = useState<PsgValues | null>(null);
