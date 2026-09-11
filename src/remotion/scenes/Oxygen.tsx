@@ -1,10 +1,11 @@
 import React from 'react';
-import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Easing, interpolate, useCurrentFrame, useVideoConfig } from 'remotion';
 import { C, getSeverity, metricById } from '../../psg/metrics';
 import type { PsgValues } from '../../psg/types';
 import { BigNumber, Body, Eyebrow, Headline, NA, Pill, Rise, SceneFrame, SegmentScale, T, clamp, sev } from '../ui';
 import { OxygenArt } from '../illustrations';
-import { ART_FILES, ArtImage } from '../art';
+import { ART_FILES, ArtImage, artSrc, useArtsAvailable } from '../art';
+import { Img } from 'remotion';
 import { sentenceStartFrame } from '../timing';
 import type { SceneProps } from './IntroOutro';
 
@@ -15,6 +16,51 @@ const SEGMENTS = [
   { from: 92, to: 100, color: sev(C.good), label: '정상' },
 ];
 const LABEL: Record<string, string> = { '중증 저하': '심함', '중등도 저하': '중간', '경증 저하': '가벼움', 정상: '정상' };
+
+/** 물방울 내부 좌표 (07-oxygen-interior.png 기준, 1024×1024): 꼭짓점 y=201, 바닥 y=800 */
+const DROP_TOP = 201;
+const DROP_BOTTOM = 800;
+
+/**
+ * 붉은 채움이 줄어드는 물방울. 배경(빈 물방울) 위에 붉은 질감을 내부 마스크로 잘라 얹고,
+ * 물결 윗선을 level(0~1) 높이까지만 그린다. 파일이 없으면 정적 그림/SVG 로 대체.
+ */
+const OxygenDrop: React.FC<{ level: number; frame: number; fallback: React.ReactNode; children?: React.ReactNode }> = ({ level, frame, fallback, children }) => {
+  const ok = useArtsAvailable([ART_FILES.oxygenBase, ART_FILES.oxygenInterior, ART_FILES.oxygenFillTile]);
+  if (ok === null) return <div style={{ width: '100%', aspectRatio: '1 / 1' }} />;
+  if (!ok) return <ArtImage name={ART_FILES.oxygen} fallback={fallback}>{children}</ArtImage>;
+
+  const y = DROP_BOTTOM - (DROP_BOTTOM - DROP_TOP) * level;
+  const amp = 9;
+  const wl = 210;
+  const phase = frame * 0.09;
+  const xs: number[] = [];
+  for (let x = 280; x <= 760; x += 12) xs.push(x);
+  const surface = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x} ${(y + Math.sin((x / wl) * Math.PI * 2 + phase) * amp).toFixed(1)}`).join(' ');
+  const fill = `${surface} L760 900 L280 900 Z`;
+
+  return (
+    <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', borderRadius: 36, overflow: 'hidden' }}>
+      <Img src={artSrc(ART_FILES.oxygenBase)} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+      <svg viewBox="0 0 1024 1024" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}>
+        <defs>
+          <pattern id="oxy-fill" patternUnits="userSpaceOnUse" width={320} height={320}>
+            <image href={artSrc(ART_FILES.oxygenFillTile)} width={320} height={320} />
+          </pattern>
+          <mask id="oxy-interior" maskUnits="userSpaceOnUse" x={0} y={0} width={1024} height={1024}>
+            <image href={artSrc(ART_FILES.oxygenInterior)} x={0} y={0} width={1024} height={1024} />
+          </mask>
+        </defs>
+        <g mask="url(#oxy-interior)">
+          <path d={fill} fill="url(#oxy-fill)" />
+          {/* 수면 위 옅은 하이라이트 */}
+          <path d={surface} stroke="rgba(255,255,255,0.35)" strokeWidth={7} fill="none" strokeLinecap="round" />
+        </g>
+      </svg>
+      {children}
+    </div>
+  );
+};
 
 /**
  * 산소포화도 추이 모션 그래픽. 평소(96%)에서 시작해 여러 번 내려갔다 올라오며, 가장 깊은 골이 환자의 최저값에 닿는다.
@@ -109,10 +155,11 @@ export const OxygenScene: React.FC<SceneProps & { values: PsgValues }> = ({ inde
   const valueAt = sentenceStartFrame(narration, '환자분은', durationInFrames, fps) ?? sentenceStartFrame(narration, '읽지 못했', durationInFrames, fps) ?? 120;
   const noteAt = sentenceStartFrame(narration, /잘 유지|살짝 내려|포인트|읽지 못했/, durationInFrames, fps) ?? valueAt + 60;
 
-  // 물방울 산소 높이: 100%에서 시작해 환자 값까지 내려간다
-  const p = interpolate(frame, [valueAt, valueAt + 60], [0, 1], clamp);
+  // 물방울 산소 높이: 100%에서 시작해 환자 값까지 내려간다 (70~100 → 채움 15%~95%)
+  const p = interpolate(frame, [valueAt, valueAt + 90], [0, 1], { ...clamp, easing: Easing.inOut(Easing.cubic) });
   const shown = spo2 == null ? 100 : 100 - (100 - Math.max(70, spo2)) * p;
   const level = (shown - 70) / 30;
+  const fillLevel = 0.15 + 0.8 * level;
 
   return (
     <SceneFrame
@@ -120,12 +167,12 @@ export const OxygenScene: React.FC<SceneProps & { values: PsgValues }> = ({ inde
       total={total}
       split={0.56}
       art={
-        <ArtImage name={ART_FILES.oxygen} fallback={<OxygenArt level={level} color={color} />}>
+        <OxygenDrop level={fillLevel} frame={frame} fallback={<OxygenArt level={level} color={color} />}>
           {/* 밤새 산소포화도가 떨어지는 모션 그래픽: 물방울 오른쪽 아래 빈 공간에 */}
           <div style={{ position: 'absolute', left: '62%', width: '36%', top: '55%', height: '30%' }}>
             <OxygenTrace lowest={spo2} color={color} progress={interpolate(frame, [valueAt, valueAt + 110], [0, 1], clamp)} />
           </div>
-        </ArtImage>
+        </OxygenDrop>
       }
     >
       <Rise at={0}>

@@ -26,6 +26,10 @@ export const ART_FILES = {
   overviewSleep: '05-overview-sleep',
   ahi: '06-ahi',
   oxygen: '07-oxygen',
+  /** 산소 장면 애니메이션용: 붉은 채움을 뺀 물방울, 내부 마스크, 붉은 질감 타일 */
+  oxygenBase: '07-oxygen-base.jpg',
+  oxygenInterior: '07-oxygen-interior.png',
+  oxygenFillTile: '07-oxygen-fill-tile.jpg',
   positionSupine: '08-position-supine',
   positionSide: '09-position-side',
   quality: '10-quality',
@@ -37,7 +41,8 @@ export const ART_FILES = {
 } as const;
 
 export function artSrc(name: string): string {
-  const file = `art/${name}.jpg`;
+  // 확장자가 있으면 그대로, 없으면 .jpg
+  const file = name.includes('.') ? `art/${name}` : `art/${name}.jpg`;
   if (typeof window !== 'undefined' && window.__PSG_ART_BASE) return window.__PSG_ART_BASE + file;
   return staticFile(file);
 }
